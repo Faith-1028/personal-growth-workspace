@@ -37,7 +37,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER IF NOT EXISTS trg_growth_records_updated
+-- PostgreSQL 不支持 CREATE TRIGGER IF NOT EXISTS，需先 DROP 再 CREATE
+DROP TRIGGER IF EXISTS trg_growth_records_updated ON growth_records;
+CREATE TRIGGER trg_growth_records_updated
   BEFORE UPDATE ON growth_records
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
