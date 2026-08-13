@@ -282,6 +282,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </head>
 <body>
 <div id="app">
+  <div id="js-error-box" style="display:none;background:#fee;color:#900;padding:12px;margin:8px;border-radius:6px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto"></div>
   <div class="sync-status offline" id="sync-status">
     <span class="sync-dot"></span>
     <span id="sync-text">初始化中...</span>
@@ -1735,10 +1736,25 @@ function setupEvents(){
 
 /* ====== INIT ====== */
 function init(){
-  loadData();
-  setupEvents();
-  setupSwipe();
-  renderAll();
+  try{
+    window.addEventListener("error",function(e){
+      var box=document.getElementById("js-error-box");
+      if(box){box.style.display="block";box.textContent="JS错误: "+(e.message||"未知错误")+"\n位置: "+(e.filename||"")+":"+(e.lineno||0)}
+      return false;
+    });
+    window.addEventListener("unhandledrejection",function(e){
+      var box=document.getElementById("js-error-box");
+      if(box){box.style.display="block";box.textContent="Promise错误: "+(e.reason&&e.reason.message||String(e.reason))}
+    });
+    loadData();
+    setupEvents();
+    setupSwipe();
+    renderAll();
+  }catch(err){
+    var box=document.getElementById("js-error-box");
+    if(box){box.style.display="block";box.textContent="初始化失败: "+err.message+"\n\n"+err.stack}
+    else{alert("初始化失败: "+err.message)}
+  }
 }
 init();
 </script>
