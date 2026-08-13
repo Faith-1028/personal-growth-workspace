@@ -238,7 +238,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .cloud-status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
 .cloud-status-badge.connected{background:#dcfce7;color:#166534}
 .cloud-status-badge.disconnected{background:#f1f5f9;color:#64748b}
-</style>
+
+/* Selected date */
+.cal-cell.selected-date{background:#dbeafe!important;border-color:var(--primary)!important;border-width:2px}
+.cal-cell .cal-add-btn{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:var(--primary);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;line-height:1;border:none;cursor:pointer;padding:0}
+.cal-cell:hover .cal-add-btn{display:flex}
+.cal-cell .cal-add-btn:active{transform:scale(.9)}
+
+/* Date filter banner */
+.date-filter-banner{display:flex;align-items:center;justify-content:space-between;background:#eff6ff;border:1px solid var(--primary);border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:13px}
+.date-filter-banner .dfb-clear{padding:2px 10px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+
+/* Today item actions */
+.today-item .ti-actions{display:flex;gap:2px;flex-shrink:0}
+.today-item .ti-btn{width:24px;height:24px;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:.12s}
+.today-item .ti-btn:hover{background:#e2e8f0;color:var(--text)}
+.today-item .ti-btn.del:hover{color:var(--danger);background:#fee2e2}
+
+/* Budget input */
+.budget-section{background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:12px}
+.budget-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.budget-label{font-size:13px;font-weight:500;color:var(--text2)}
+.budget-input{width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:14px}
+.budget-save{padding:4px 10px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+.budget-warning{background:#fef2f2;color:#dc2626;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px}
+
+/* Sync to career button */
+.sync-career-btn{padding:2px 8px;background:var(--career);color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap}
+.sync-career-btn:active{transform:scale(.95)}
+.sync-career-btn.synced{background:#c4b5fd;cursor:default}
+
+/* Skill cumulative progress */
+.skill-cumulative{background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:10px}
+.skill-cumulative-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.skill-cumulative-time{font-size:18px;font-weight:700;color:var(--skill)}
+.skill-cumulative-label{font-size:11px;color:var(--text3)}
+.skill-cumulative-track{height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden}
+.skill-cumulative-fill{height:100%;border-radius:5px;transition:.3s}
+
+/* Section title with date */
+.section-title-date{font-size:12px;color:var(--text3);font-weight:400;margin-left:4px}
+
 </head>
 <body>
 <div id="app">
@@ -365,7 +405,7 @@ var WEEKDAYS=["日","一","二","三","四","五","六"];
 
 /* ====== STATE ====== */
 var records=[];
-var state={view:"month",currentDate:new Date(),currentModule:"fitness",modalDate:null,editingId:null};
+var state={view:"month",currentDate:new Date(),currentModule:"fitness",modalDate:null,editingId:null,selectedDate:null};
 
 /* ====== UTILITIES ====== */
 function uid(){return"r_"+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
@@ -375,7 +415,9 @@ function parseDate(s){var p=s.split("-");return new Date(parseInt(p[0]),parseInt
 function todayStr(){return fmtDate(new Date())}
 function isoNow(){return new Date().toISOString()}
 function escapeHtml(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function showToast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},2200)}
+function isSampleRecord(r){return /^s\d+$/.test(r.id)}
+function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}")}catch(e){return{}}}
+function saveSettings(s){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s))}catch(e){}}
 
 /* ====== CLOUD SYNC (Supabase) ====== */
 var CloudSync={
@@ -721,7 +763,9 @@ function getPeriodLabel(){
   var d=state.currentDate;
   if(state.view==="month")return d.getFullYear()+"年"+(d.getMonth()+1)+"月";
   var s=getWeekStart(d),e=new Date(s);e.setDate(e.getDate()+6);
-  return(s.getMonth()+1)+"月"+s.getDate()+"日 - "+(e.getMonth()+1)+"月"+e.getDate()+"日";
+  var y1=s.getFullYear(),y2=e.getFullYear();
+  if(y1===y2){return y1+"年"+(s.getMonth()+1)+"月"+s.getDate()+"日 - "+(e.getMonth()+1)+"月"+e.getDate()+"日"}
+  return y1+"年"+(s.getMonth()+1)+"月"+s.getDate()+"日 - "+y2+"年"+(e.getMonth()+1)+"月"+e.getDate()+"日";
 }
 function getWeekStart(d){
   var s=new Date(d);var day=s.getDay();var diff=day===0?-6:1-day;
@@ -742,6 +786,7 @@ function renderMonthView(){
     var ds=fmtDate(cellDate);
     var isOther=cellDate.getMonth()!==month;
     var isToday=ds===today;
+    var isSelected=ds===state.selectedDate;
     var dayRecords=getRecordsByDate(ds);
     var modules={};
     var expense=0;
@@ -753,10 +798,14 @@ function renderMonthView(){
     var dots="";
     for(var m in modules){if(modules.hasOwnProperty(m)){dots+='<span class="cal-dot" style="background:'+MODULES[m].color+'"></span>'}}
     var amtStr=expense>0?'<span class="cal-amount">-'+expense.toFixed(0)+'</span>':"";
-    html+='<div class="cal-cell'+(isOther?' other-month':'')+(isToday?' today':'')+'" data-date="'+ds+'">';
+    var cls="cal-cell";
+    if(isOther)cls+=" other-month";
+    if(isToday)cls+=" today";
+    if(isSelected)cls+=" selected-date";
+    html+='<div class="'+cls+'" data-date="'+ds+'">';
     html+='<span class="cal-date">'+cellDate.getDate()+'</span>';
     html+='<div class="cal-dots">'+dots+amtStr+'</div>';
-    html+='<span class="cal-add">+</span></div>';
+    html+='<button class="cal-add-btn" data-add-date="'+ds+'">+</button></div>';
   }
   html+='</div>';
   return html;
@@ -771,8 +820,12 @@ function renderWeekView(){
     var d=new Date(ws);d.setDate(d.getDate()+i);
     var ds=fmtDate(d);
     var isToday=ds===today;
+    var isSelected=ds===state.selectedDate;
     var dayRecords=getRecordsByDate(ds);
-    html+='<div class="week-col'+(isToday?' today':'')+'" data-date="'+ds+'">';
+    var colCls="week-col";
+    if(isToday)colCls+=" today";
+    if(isSelected)colCls+=" selected-date";
+    html+='<div class="'+colCls+'" data-date="'+ds+'">';
     html+='<div class="week-date">'+(d.getMonth()+1)+'/'+d.getDate()+'<br><span class="wd-day">周'+WEEKDAYS[d.getDay()]+'</span></div>';
     html+='<div class="week-tasks">';
     if(dayRecords.length===0){html+='<div class="week-empty">无任务</div>'}
@@ -794,16 +847,53 @@ function renderWeekView(){
 /* ====== TODAY SECTION ====== */
 function renderTodaySection(){
   var today=todayStr();
-  var overdue=getOverdueRecords();
-  var todayRecs=getTodayRecords();
-  var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
-  var tomStr=fmtDate(tomorrow);
-  var tomorrowRecs=records.filter(function(r){return r.date===tomStr&&r.status==="pending"});
-
-  var html="";
+  var editIcon='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+  var delIcon='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>';
   var checkIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  var html="";
+  var sectionTitle="今天要处理";
+  var items=[];
+  
+  if(state.selectedDate&&state.selectedDate!==today){
+    // Show selected date's items
+    var sd=state.selectedDate;
+    var selDate=parseDate(sd);
+    sectionTitle=(selDate.getMonth()+1)+"月"+selDate.getDate()+"日 的任务";
+    var dayRecs=getRecordsByDate(sd);
+    items=dayRecs.map(function(r){
+      return{rec:r,type:"selected"};
+    });
+    if(items.length===0){
+      html='<div class="today-empty">'+sectionTitle+'没有任务，点击"+ 新增"添加</div>';
+    }else{
+      items.forEach(function(it){
+        var r=it.rec;
+        var mc=MODULES[r.module].color;
+        var isOverdue=r.date<today&&r.status==="pending"&&!r.isVirtual;
+        html+='<div class="today-item'+(r.checked?' done':'')+(isOverdue?' overdue':'')+'">';
+        html+='<div class="ti-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'">'+checkIcon+'</div>';
+        html+='<div class="ti-body"><div class="ti-title">'+escapeHtml(r.title)+'</div>';
+        html+='<div class="ti-meta"><span class="ti-dot" style="background:'+mc+'"></span>';
+        html+='<span>'+MODULES[r.module].short+'</span>';
+        if(r.detail){
+          if(r.detail.duration)html+='<span>'+r.detail.duration+'分钟</span>';
+          if(r.detail.amount)html+='<span class="'+(r.detail.type==='expense'?'ri-amount expense':'ri-amount income')+'" style="font-size:11px">'+(r.detail.type==='expense'?'-':'+')+'¥'+r.detail.amount+'</span>';
+        }
+        html+='</div></div>';
+        html+='<div class="ti-actions">';
+        html+='<button class="ti-btn" data-edit-id="'+r.id+'">'+editIcon+'</button>';
+        if(!r.isVirtual)html+='<button class="ti-btn del" data-delete-id="'+r.id+'">'+delIcon+'</button>';
+        html+='</div></div>';
+      });
+    }
+  }else{
+    // Default: overdue + today + tomorrow
+    var overdue=getOverdueRecords();
+    var todayRecs=getTodayRecords();
+    var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+    var tomStr=fmtDate(tomorrow);
+    var tomorrowRecs=records.filter(function(r){return r.date===tomStr&&r.status==="pending"});
 
-  if(overdue.length>0){
     overdue.forEach(function(r){
       var mc=MODULES[r.module].color;
       html+='<div class="today-item overdue">';
@@ -814,32 +904,53 @@ function renderTodaySection(){
       if(r.detail&&r.detail.project)html+='<span>'+escapeHtml(r.detail.project)+'</span>';
       html+='</div></div>';
       html+='<button class="ti-action" data-reschedule="'+r.id+'">顺延</button>';
-      html+='</div>';
+      html+='<div class="ti-actions">';
+      html+='<button class="ti-btn" data-edit-id="'+r.id+'">'+editIcon+'</button>';
+      html+='<button class="ti-btn del" data-delete-id="'+r.id+'">'+delIcon+'</button>';
+      html+='</div></div>';
     });
+    todayRecs.forEach(function(r){
+      var mc=MODULES[r.module].color;
+      html+='<div class="today-item'+(r.checked?' done':'')+'">';
+      html+='<div class="ti-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'">'+checkIcon+'</div>';
+      html+='<div class="ti-body"><div class="ti-title">'+escapeHtml(r.title)+'</div>';
+      html+='<div class="ti-meta"><span class="ti-dot" style="background:'+mc+'"></span>';
+      html+='<span>'+MODULES[r.module].short+'</span>';
+      if(r.detail){
+        if(r.detail.duration)html+='<span>'+r.detail.duration+'分钟</span>';
+        if(r.detail.amount)html+='<span class="'+(r.detail.type==='expense'?'ri-amount expense':'ri-amount income')+'" style="font-size:11px">'+(r.detail.type==='expense'?'-':'+')+'¥'+r.detail.amount+'</span>';
+      }
+      html+='</div></div>';
+      html+='<div class="ti-actions">';
+      html+='<button class="ti-btn" data-edit-id="'+r.id+'">'+editIcon+'</button>';
+      if(!r.isVirtual)html+='<button class="ti-btn del" data-delete-id="'+r.id+'">'+delIcon+'</button>';
+      html+='</div></div>';
+    });
+    tomorrowRecs.forEach(function(r){
+      var mc=MODULES[r.module].color;
+      html+='<div class="today-item due-today">';
+      html+='<div class="ti-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'">'+checkIcon+'</div>';
+      html+='<div class="ti-body"><div class="ti-title">'+escapeHtml(r.title)+'</div>';
+      html+='<div class="ti-meta"><span class="ti-dot" style="background:'+mc+'"></span>';
+      html+='<span class="ti-badge orange">明天截止</span>';
+      html+='</div></div>';
+      html+='<div class="ti-actions">';
+      html+='<button class="ti-btn" data-edit-id="'+r.id+'">'+editIcon+'</button>';
+      html+='<button class="ti-btn del" data-delete-id="'+r.id+'">'+delIcon+'</button>';
+      html+='</div></div>';
+    });
+    if(!html)html='<div class="today-empty">今天没有待处理项，继续保持！</div>';
   }
-  todayRecs.forEach(function(r){
-    var mc=MODULES[r.module].color;
-    html+='<div class="today-item'+(r.checked?' done':'')+'">';
-    html+='<div class="ti-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'">'+checkIcon+'</div>';
-    html+='<div class="ti-body"><div class="ti-title">'+escapeHtml(r.title)+'</div>';
-    html+='<div class="ti-meta"><span class="ti-dot" style="background:'+mc+'"></span>';
-    html+='<span>'+MODULES[r.module].short+'</span>';
-    if(r.detail){
-      if(r.detail.duration)html+='<span>'+r.detail.duration+'分钟</span>';
-      if(r.detail.amount)html+='<span class="'+(r.detail.type==='expense'?'ri-amount expense':'ri-amount income')+'" style="font-size:11px">'+(r.detail.type==='expense'?'-':'+')+'¥'+r.detail.amount+'</span>';
+  
+  // Update section title
+  var titleEl=document.querySelector(".section-title");
+  if(titleEl){
+    titleEl.innerHTML=sectionTitle;
+    if(state.selectedDate&&state.selectedDate!==today){
+      titleEl.innerHTML+=' <span class="section-title-date">('+state.selectedDate+')</span>';
     }
-    html+='</div></div></div>';
-  });
-  tomorrowRecs.forEach(function(r){
-    var mc=MODULES[r.module].color;
-    html+='<div class="today-item due-today">';
-    html+='<div class="ti-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'">'+checkIcon+'</div>';
-    html+='<div class="ti-body"><div class="ti-title">'+escapeHtml(r.title)+'</div>';
-    html+='<div class="ti-meta"><span class="ti-dot" style="background:'+mc+'"></span>';
-    html+='<span class="ti-badge orange">明天截止</span>';
-    html+='</div></div></div>';
-  });
-  if(!html)html='<div class="today-empty">今天没有待处理项，继续保持！</div>';
+  }
+  
   document.getElementById("today-content").innerHTML=html;
 }
 
@@ -860,13 +971,22 @@ function renderModuleView(){
   var mod=MODULES[m];
   document.getElementById("module-title").innerHTML='<span class="tab-dot" style="background:'+mod.color+';width:10px;height:10px"></span>'+mod.name;
   var html="";
+  // Date filter banner
+  if(state.selectedDate){
+    var sd=parseDate(state.selectedDate);
+    html+='<div class="date-filter-banner"><span>筛选日期：'+state.selectedDate+' ('+["周日","周一","周二","周三","周四","周五","周六"][sd.getDay()]+')</span>';
+    html+='<button class="dfb-clear" id="clear-date-filter">清除筛选</button></div>';
+  }
   var recs=getRecordsByModule(m);
-  if(m==="fitness")html=renderFitnessView(recs);
-  else if(m==="skill")html=renderSkillView(recs);
-  else if(m==="work")html=renderWorkView(recs);
-  else if(m==="career")html=renderCareerView(recs);
-  else if(m==="finance")html=renderFinanceView(recs);
+  if(m==="fitness")html+=renderFitnessView(recs);
+  else if(m==="skill")html+=renderSkillView(recs);
+  else if(m==="work")html+=renderWorkView(recs);
+  else if(m==="career")html+=renderCareerView(recs);
+  else if(m==="finance")html+=renderFinanceView(recs);
   document.getElementById("module-content").innerHTML=html;
+  // Bind clear date filter
+  var clearBtn=document.getElementById("clear-date-filter");
+  if(clearBtn){clearBtn.onclick=function(){state.selectedDate=null;renderAll()}}
 }
 function renderFitnessView(recs){
   var monthRecs=recs.filter(function(r){return r.date.substring(0,7)===todayStr().substring(0,7)});
@@ -887,7 +1007,8 @@ function renderFitnessView(recs){
   }
 
   html+='<div class="record-list">';
-  recs.slice(0,20).forEach(function(r){
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  displayRecs.slice(0,30).forEach(function(r){
     var mc=MODULES.fitness.color;
     html+='<div class="record-item'+(r.checked?' done':'')+'">';
     html+='<div class="ri-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'" style="border-color:'+(r.checked?mc:'')+'"></div>';
@@ -901,31 +1022,44 @@ function renderFitnessView(recs){
     html+='<div class="ri-actions"><button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>';
     html+='</div>';
   });
-  if(recs.length===0)html+='<div class="empty-state">暂无健身记录，点击"新增"开始记录</div>';
+  if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无健身记录':'暂无健身记录，点击"新增"开始记录')+'</div>';
   html+='</div>';
   return html;
 }
 function renderSkillView(recs){
   var skills={};
+  var totalStudyMin=0;
   recs.forEach(function(r){
     var name=r.detail.skill_name||"未分类";
-    if(!skills[name]||r.date>skills[name].date){skills[name]={name:name,mastery:parseInt(r.detail.mastery)||1,resource:r.detail.resource||"",latestDate:r.date,count:0}}
-    if(skills[name])skills[name].count++;
+    totalStudyMin+=parseInt(r.detail.study_duration)||0;
+    if(!skills[name]||r.date>skills[name].date){skills[name]={name:name,mastery:parseInt(r.detail.mastery)||1,resource:r.detail.resource||"",latestDate:r.date,count:0,totalMin:0}}
+    if(skills[name]){skills[name].count++;skills[name].totalMin+=parseInt(r.detail.study_duration)||0}
   });
-  var html='<div class="chart-container"><div class="chart-title">技能掌握度</div>';
+  // Cumulative study time progress bar (target: 100 hours = 6000 min)
+  var targetHours=100;var targetMin=targetHours*60;
+  var pct=Math.min(100,(totalStudyMin/targetMin)*100);
+  var html='<div class="skill-cumulative">';
+  html+='<div class="skill-cumulative-header"><div><span class="skill-cumulative-time">'+(totalStudyMin/60).toFixed(1)+'</span><span style="font-size:12px;color:var(--text3)"> 小时</span></div>';
+  html+='<span class="skill-cumulative-label">累计学习时长 / 目标 '+targetHours+' 小时</span></div>';
+  html+='<div class="skill-cumulative-track"><div class="skill-cumulative-fill" style="width:'+pct.toFixed(1)+'%;background:'+MODULES.skill.color+'"></div></div>';
+  html+='<div style="font-size:11px;color:var(--text3);margin-top:4px">'+pct.toFixed(1)+'% 完成 · 剩余 '+((targetMin-totalStudyMin)/60).toFixed(1)+' 小时</div>';
+  html+='</div>';
+
+  html+='<div class="chart-container"><div class="chart-title">技能掌握度</div>';
   for(var s in skills){if(skills.hasOwnProperty(s)){
-    var sk=skills[s];var pct=(sk.mastery/5)*100;
+    var sk=skills[s];var spct=(sk.mastery/5)*100;
     html+='<div class="skill-bar">';
     html+='<div class="skill-bar-header"><span class="skill-name">'+escapeHtml(sk.name)+'</span><span class="skill-stars">'+"★".repeat(sk.mastery)+"☆".repeat(5-sk.mastery)+'</span></div>';
-    html+='<div class="skill-bar-track"><div class="skill-bar-fill" style="width:'+pct+'%;background:'+MODULES.skill.color+'"></div></div>';
-    html+='<div class="skill-resource">'+escapeHtml(sk.resource)+' · '+sk.count+'次记录</div>';
+    html+='<div class="skill-bar-track"><div class="skill-bar-fill" style="width:'+spct+'%;background:'+MODULES.skill.color+'"></div></div>';
+    html+='<div class="skill-resource">'+escapeHtml(sk.resource)+' · '+sk.count+'次记录 · 累计'+(sk.totalMin/60).toFixed(1)+'h</div>';
     html+='</div>';
   }}
   if(Object.keys(skills).length===0)html+='<div class="empty-state">暂无技能数据</div>';
   html+='</div>';
 
   html+='<div class="record-list">';
-  recs.slice(0,20).forEach(function(r){
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  displayRecs.slice(0,30).forEach(function(r){
     var mc=MODULES.skill.color;
     html+='<div class="record-item'+(r.checked?' done':'')+'">';
     html+='<div class="ri-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'" style="border-color:'+(r.checked?mc:'')+'"></div>';
@@ -938,7 +1072,7 @@ function renderSkillView(recs){
     html+='<div class="ri-actions"><button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>';
     html+='</div>';
   });
-  if(recs.length===0)html+='<div class="empty-state">暂无学习记录</div>';
+  if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无学习记录':'暂无学习记录')+'</div>';
   html+='</div>';
   return html;
 }
@@ -956,7 +1090,8 @@ function renderWorkView(recs){
   html+='</div>';
 
   html+='<div class="record-list">';
-  recs.slice(0,20).forEach(function(r){
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  displayRecs.slice(0,30).forEach(function(r){
     var cls="";
     var urgency="";
     var dl=r.detail.deadline;
@@ -968,6 +1103,8 @@ function renderWorkView(recs){
     var pri=r.detail.priority||"medium";
     var pc=PRIORITY[pri]?PRIORITY[pri].color:"#6b7280";
     var pl=PRIORITY[pri]?PRIORITY[pri].label:"中";
+    // Check if already synced to career
+    var syncedCareer=records.some(function(cr){return cr.module==="career"&&cr.detail.linked_work_id===r.id});
     html+='<div class="task-item'+cls+'">';
     html+='<div class="ri-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'"></div>';
     html+='<div class="ri-body"><div class="ri-title">'+escapeHtml(r.title)+'</div>';
@@ -975,10 +1112,14 @@ function renderWorkView(recs){
     if(r.detail.project)html+='<span>'+escapeHtml(r.detail.project)+'</span>';
     if(dl)html+='<span class="task-deadline">截止:'+dl+'</span>';
     html+=urgency+'</div></div>';
-    html+='<div class="ri-actions"><button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>';
-    html+='</div>';
+    html+='<div class="ri-actions">';
+    if(r.checked){
+      html+='<button class="sync-career-btn'+(syncedCareer?' synced':'')+'" data-sync-career="'+r.id+'"'+(syncedCareer?' disabled':'')+'>'+(syncedCareer?'已同步':'→职业')+'</button>';
+    }
+    html+='<button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>';
+    html+='</div></div>';
   });
-  if(recs.length===0)html+='<div class="empty-state">暂无工作任务</div>';
+  if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无工作任务':'暂无工作任务')+'</div>';
   html+='</div>';
   return html;
 }
@@ -994,14 +1135,19 @@ function renderCareerView(recs){
   var html='<div class="chart-container"><div class="chart-title">目标里程碑看板</div>';
   for(var g in goals){if(goals.hasOwnProperty(g)){
     var gl=goals[g];
+    var completedCount=gl.milestones.filter(function(r){return r.checked}).length;
+    var totalCount=gl.milestones.length;
+    var progressPct=totalCount>0?(completedCount/totalCount*100).toFixed(0):0;
     html+='<div class="milestone-card">';
-    html+='<div class="milestone-goal">'+escapeHtml(gl.goal)+'</div>';
+    html+='<div class="milestone-goal">'+escapeHtml(gl.goal)+' <span style="font-size:12px;color:var(--text3);font-weight:400">'+progressPct+'% ('+completedCount+'/'+totalCount+')</span></div>';
     gl.milestones.slice(0,5).forEach(function(r){
+      var linkedWork=r.detail.linked_work_id?records.filter(function(wr){return wr.id===r.detail.linked_work_id})[0]:null;
       html+='<div class="milestone-row">';
       html+='<span class="milestone-label">'+(r.checked?'已完成':'进行中')+'</span>';
       html+='<span class="milestone-value">'+escapeHtml(r.title);
       if(r.detail.milestone)html+=' · '+escapeHtml(r.detail.milestone);
       if(r.detail.key_results)html+=' · '+escapeHtml(r.detail.key_results);
+      if(linkedWork)html+=' <span style="color:var(--work);font-size:11px">[关联工作:'+escapeHtml(linkedWork.title)+']</span>';
       html+='</span></div>';
     });
     html+='</div>';
@@ -1010,7 +1156,8 @@ function renderCareerView(recs){
   html+='</div>';
 
   html+='<div class="record-list">';
-  recs.slice(0,20).forEach(function(r){
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  displayRecs.slice(0,30).forEach(function(r){
     html+='<div class="record-item'+(r.checked?' done':'')+'">';
     html+='<div class="ri-check'+(r.checked?' checked':'')+'" data-toggle-id="'+r.id+'" style="border-color:'+(r.checked?MODULES.career.color:'')+'"></div>';
     html+='<div class="ri-body"><div class="ri-title">'+escapeHtml(r.title)+'</div>';
@@ -1021,7 +1168,7 @@ function renderCareerView(recs){
     html+='<div class="ri-actions"><button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>';
     html+='</div>';
   });
-  if(recs.length===0)html+='<div class="empty-state">暂无职业成长记录</div>';
+  if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无职业成长记录':'暂无职业成长记录')+'</div>';
   html+='</div>';
   return html;
 }
@@ -1036,7 +1183,37 @@ function renderFinanceView(recs){
     else{expense+=amt;var c=r.detail.category||"其他";cats[c]=(cats[c]||0)+amt}
   });
 
-  var html='<div class="module-stats">';
+  // Budget setting
+  var settings=getSettings();
+  var budget=settings.monthlyBudget||0;
+
+  var html='<div class="budget-section">';
+  html+='<div class="budget-row">';
+  html+='<span class="budget-label">月度预算上限：</span>';
+  html+='<input class="budget-input" id="budget-input" type="number" step="0.01" value="'+(budget||'')+'" placeholder="如 5000">';
+  html+='<button class="budget-save" id="budget-save-btn">保存</button>';
+  if(budget>0){
+    html+='<span style="font-size:12px;color:var(--text3)">已设：¥'+budget.toFixed(2)+'</span>';
+  }
+  html+='</div>';
+  if(budget>0){
+    var remaining=budget-expense;
+    var budgetPct=Math.min(100,(expense/budget)*100);
+    if(expense>budget){
+      html+='<div class="budget-warning">';
+      html+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      html+='已超支 ¥'+Math.abs(remaining).toFixed(2)+'！本月支出 ¥'+expense.toFixed(2)+' / 预算 ¥'+budget.toFixed(2);
+      html+='</div>';
+    }else{
+      html+='<div style="margin-top:6px;font-size:12px;color:'+(remaining<budget*0.2?'var(--warning)':'var(--text3)')+'">';
+      html+='本月支出 '+budgetPct.toFixed(0)+'% · 剩余 ¥'+remaining.toFixed(2);
+      html+='<div style="height:6px;background:#e2e8f0;border-radius:3px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+budgetPct+'%;background:'+(expense>budget?'var(--danger)':'var(--success)')+';border-radius:3px"></div></div>';
+      html+='</div>';
+    }
+  }
+  html+='</div>';
+
+  html+='<div class="module-stats">';
   html+='<div class="stat-card"><div class="stat-value" style="color:var(--success)">+'+income.toFixed(0)+'</div><div class="stat-label">本月收入</div></div>';
   html+='<div class="stat-card"><div class="stat-value" style="color:var(--danger)">-'+expense.toFixed(0)+'</div><div class="stat-label">本月支出</div></div>';
   html+='<div class="stat-card"><div class="stat-value" style="color:'+(income-expense>=0?'var(--success)':'var(--danger)')+'">'+(income-expense>=0?"+":"")+(income-expense).toFixed(0)+'</div><div class="stat-label">本月结余</div></div>';
@@ -1055,7 +1232,8 @@ function renderFinanceView(recs){
   }
 
   html+='<div class="record-list">';
-  recs.slice(0,20).forEach(function(r){
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  displayRecs.slice(0,30).forEach(function(r){
     var isExp=r.detail.type==="expense";
     html+='<div class="record-item">';
     html+='<div class="ri-body"><div class="ri-title">'+escapeHtml(r.title)+'</div>';
@@ -1068,7 +1246,7 @@ function renderFinanceView(recs){
     html+='<div class="ri-actions"><button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></div>';
     html+='</div>';
   });
-  if(recs.length===0)html+='<div class="empty-state">暂无记账记录</div>';
+  if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无记账记录':'暂无记账记录')+'</div>';
   html+='</div>';
   return html;
 }
@@ -1315,6 +1493,32 @@ function rescheduleRecord(id){
   renderAll();
 }
 
+/* ====== SYNC TO CAREER ====== */
+function syncToCareer(workId){
+  var work=findRecord(workId);
+  if(!work){return}
+  var exists=records.some(function(r){return r.module==="career"&&r.detail.linked_work_id===workId});
+  if(exists){showToast("已同步过此任务");return}
+  var careerRec={
+    module:"career",
+    title:work.title,
+    date:work.date,
+    status:"done",
+    checked:true,
+    detail:{
+      growth_goal:work.detail.project||"工作任务转化",
+      milestone:"完成:"+work.title,
+      key_results:work.title,
+      review:"由工作任务自动同步",
+      linked_work_id:workId
+    },
+    repeat:"none"
+  };
+  addRecord(careerRec);
+  showToast("已同步到职业成长");
+  renderAll();
+}
+
 /* ====== IMAGE COMPRESS ====== */
 function compressImage(file,cb){
   var reader=new FileReader();
@@ -1396,7 +1600,7 @@ function renderAll(){
   var bw=document.getElementById("backup-warning");
   if(records.length>=30){
     bw.style.display="block";
-    bw.innerHTML="数据已积累 <strong>"+records.length+"</strong> 条，建议导出 CSV 备份";
+    bw.innerHTML="数据已积累 <strong>"+records.length+"</strong> 条，云端已自动同步。也可导出 CSV 作为本地备份";
   }else{bw.style.display="none"}
 }
 
@@ -1408,7 +1612,7 @@ function navigateCalendar(dir){
   state.currentDate=d;
   renderCalendar();
 }
-function goToToday(){state.currentDate=new Date();renderCalendar();renderTodaySection()}
+function goToToday(){state.currentDate=new Date();state.selectedDate=null;renderAll()}
 function switchView(v){state.view=v;renderCalendar()}
 
 /* ====== TOUCH SWIPE ====== */
@@ -1445,7 +1649,7 @@ function setupEvents(){
     if(tab){state.currentModule=tab.dataset.module;renderModuleTabs();renderModuleView()}
   });
   // Add button
-  document.getElementById("add-btn").onclick=function(){openModal(todayStr(),null)};
+  document.getElementById("add-btn").onclick=function(){openModal(state.selectedDate||todayStr(),null)};
   // Modal
   document.getElementById("modal-close").onclick=closeModal;
   document.getElementById("modal-cancel").onclick=closeModal;
@@ -1453,19 +1657,36 @@ function setupEvents(){
   document.getElementById("modal-overlay").addEventListener("click",function(e){if(e.target===this)closeModal()});
   // Event delegation for dynamic content
   document.addEventListener("click",function(e){
+    var addDateBtn=e.target.closest("[data-add-date]");
+    if(addDateBtn){e.stopPropagation();openModal(addDateBtn.dataset.addDate,null);return}
     var toggle=e.target.closest("[data-toggle-id]");
     if(toggle){toggleRecord(toggle.dataset.toggleId);return}
     var resched=e.target.closest("[data-reschedule]");
     if(resched){rescheduleRecord(resched.dataset.reschedule);return}
+    var syncCareer=e.target.closest("[data-sync-career]");
+    if(syncCareer){syncToCareer(syncCareer.dataset.syncCareer);return}
     var edit=e.target.closest("[data-edit-id]");
     if(edit){openModal(null,edit.dataset.editId);return}
     var del=e.target.closest("[data-delete-id]");
     if(del){
-      if(confirm("确认删除这条记录？")){deleteRecord(del.dataset.deleteId);renderAll();showToast("已删除")}
+      if(confirm("确认删除这条记录？此操作会同步删除云端数据。")){deleteRecord(del.dataset.deleteId);renderAll();showToast("已删除")}
       return;
     }
     var calCell=e.target.closest("[data-date]");
-    if(calCell){openModal(calCell.dataset.date,null);return}
+    if(calCell){
+      state.selectedDate=calCell.dataset.date;
+      renderAll();
+      return;
+    }
+    var budgetSave=e.target.closest("#budget-save-btn");
+    if(budgetSave){
+      var input=document.getElementById("budget-input");
+      var val=parseFloat(input.value)||0;
+      var s=getSettings();s.monthlyBudget=val;saveSettings(s);
+      showToast(val>0?"预算已设为 ¥"+val.toFixed(2):"预算已清除");
+      renderModuleView();
+      return;
+    }
   });
   // CSV
   document.getElementById("export-csv-btn").onclick=exportCSV;
@@ -1479,11 +1700,19 @@ function setupEvents(){
   };
   // Clear sample
   document.getElementById("clear-sample-btn").onclick=function(){
-    if(confirm("确认清空示例数据？")){records=records.filter(function(r){return r.id.indexOf("s")!==0});saveData();renderAll();showToast("已清空示例数据")}
+    if(confirm("确认清空示例数据？这将同时从本地和云端删除示例记录。")){
+      var sampleRecs=records.filter(isSampleRecord);
+      sampleRecs.forEach(function(r){CloudSync.deleteRemote(r.id)});
+      records=records.filter(function(r){return!isSampleRecord(r)});
+      saveData();renderAll();showToast("已清空 "+sampleRecs.length+" 条示例数据")
+    }
   };
   // Clear all
   document.getElementById("clear-all-btn").onclick=function(){
-    if(confirm("确认清空所有数据？此操作不可恢复！建议先导出备份。")){records=[];saveData();renderAll();showToast("已清空所有数据")}
+    if(confirm("确认清空所有数据？此操作不可恢复！数据将同时从本地和云端删除。")){
+      records.forEach(function(r){CloudSync.deleteRemote(r.id)});
+      records=[];saveData();renderAll();showToast("已清空所有数据")
+    }
   };
   // Cloud sync
   document.getElementById("cloud-connect-btn").onclick=function(){
