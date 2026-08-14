@@ -278,6 +278,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 /* Section title with date */
 .section-title-date{font-size:12px;color:var(--text3);font-weight:400;margin-left:4px}
+
+/* Finance sub-tabs */
+.fin-subtabs{display:flex;gap:4px;margin-bottom:12px;background:#f1f5f9;border-radius:8px;padding:3px}
+.fin-subtab{flex:1;padding:7px 12px;border:none;background:none;border-radius:6px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:.15s;text-align:center}
+.fin-subtab.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+/* Ledger items */
+.ledger-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.ledger-item{background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid #0891b2;transition:.15s}
+.ledger-item:hover{background:#f1f5f9}
+.ledger-item-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.ledger-item-title{font-size:14px;font-weight:600;flex:1}
+.ledger-item-amount{font-size:16px;font-weight:700;color:#0891b2;white-space:nowrap}
+.ledger-item-meta{font-size:12px;color:var(--text3);display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.ledger-progress-section{margin-top:6px}
+.ledger-progress-label{font-size:11px;color:var(--text2);margin-bottom:3px;display:flex;justify-content:space-between}
+.ledger-progress-track{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.ledger-progress-fill{height:100%;border-radius:4px;transition:.3s}
+.ledger-progress-fill.session{background:linear-gradient(90deg,#0891b2,#06b6d4)}
+.ledger-progress-fill.period{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+.ledger-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.ledger-badge.active{background:#dcfce7;color:#16a34a}
+.ledger-badge.expired{background:#fee2e2;color:#dc2626}
+.ledger-badge.warning{background:#fef3c7;color:#d97706}
+.ledger-actions{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.ledger-verify-btn{padding:4px 10px;background:#0891b2;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap}
+.ledger-verify-btn:active{transform:scale(.95)}
+.ledger-verify-btn:disabled{opacity:.5;cursor:default}
+.ledger-link-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:#eff6ff;color:#3b82f6}
+
+/* Calendar diamond */
+.cal-diamond{position:absolute;top:3px;left:3px;width:8px;height:8px;transform:rotate(45deg);background:#0891b2;opacity:.8}
 </style>
 </head>
 <body>
@@ -398,7 +430,8 @@ var MODULES={
   skill:{name:"技能学习",color:"#3b82f6",short:"技能"},
   work:{name:"工作任务",color:"#f97316",short:"工作"},
   career:{name:"职业成长",color:"#8b5cf6",short:"职业"},
-  finance:{name:"花销记账",color:"#6b7280",short:"记账"}
+  finance:{name:"花销记账",color:"#6b7280",short:"记账"},
+  asset_ledger:{name:"预付台账",color:"#0891b2",short:"预付"}
 };
 var FINANCE_CATS={"餐饮":"#f97316","交通":"#3b82f6","购物":"#ec4899","娱乐":"#8b5cf6","住房":"#22c55e","医疗":"#ef4444","教育":"#f59e0b","其他":"#6b7280"};
 var PRIORITY={high:{label:"高",color:"#ef4444"},medium:{label:"中",color:"#f59e0b"},low:{label:"低",color:"#22c55e"}};
@@ -406,7 +439,7 @@ var WEEKDAYS=["日","一","二","三","四","五","六"];
 
 /* ====== STATE ====== */
 var records=[];
-var state={view:"month",currentDate:new Date(),currentModule:"fitness",modalDate:null,editingId:null,selectedDate:null};
+var state={view:"month",currentDate:new Date(),currentModule:"fitness",modalDate:null,editingId:null,selectedDate:null,financeSubTab:"daily"};
 
 /* ====== UTILITIES ====== */
 function uid(){return"r_"+Date.now().toString(36)+Math.random().toString(36).substr(2,5)}
@@ -740,6 +773,10 @@ function getSampleData(){
   var y1=new Date(now);y1.setDate(y1.getDate()-1);var y=fmtDate(y1);
   var y2=new Date(now);y2.setDate(y2.getDate()-2);var yy=fmtDate(y2);
   var y3=new Date(now);y3.setDate(y3.getDate()-3);var yyy=fmtDate(y3);
+  var ls=new Date(now);ls.setDate(ls.getDate()-15);var lsStr=fmtDate(ls);
+  var le=new Date(now);le.setMonth(le.getMonth()+2);var leStr=fmtDate(le);
+  var ps=new Date(now);ps.setDate(ps.getDate()-45);var psStr=fmtDate(ps);
+  var pe=new Date(now);pe.setDate(pe.getDate()+15);var peStr=fmtDate(pe);
   return[
     {id:"s1",module:"fitness",title:"跑步30分钟",date:t,status:"done",checked:true,detail:{exercise_type:"跑步",duration:30,calories:320,weight:72.5,body_fat:18.5,diet_notes:"早餐燕麦粥，午餐鸡胸肉沙拉"},repeat:"none",created_at:t+"T08:00:00Z",updated_at:t+"T08:00:00Z"},
     {id:"s2",module:"skill",title:"学习React Hooks",date:t,status:"pending",checked:false,detail:{skill_name:"React",resource:"官方文档",study_duration:60,mastery:3,notes:"useEffect依赖数组用法"},repeat:"daily",created_at:t+"T09:00:00Z",updated_at:t+"T09:00:00Z"},
@@ -750,7 +787,9 @@ function getSampleData(){
     {id:"s7",module:"fitness",title:"俯卧撑50个",date:y,status:"done",checked:true,detail:{exercise_type:"力量训练",duration:15,calories:80,weight:72.8,body_fat:18.8,diet_notes:"正常饮食"},repeat:"none",created_at:y+"T07:00:00Z",updated_at:y+"T07:00:00Z"},
     {id:"s8",module:"fitness",title:"跑步5公里",date:yyy,status:"done",checked:true,detail:{exercise_type:"跑步",duration:28,calories:350,weight:73.0,body_fat:19.0,diet_notes:"晚餐后慢跑"},repeat:"none",created_at:yyy+"T19:00:00Z",updated_at:yyy+"T19:00:00Z"},
     {id:"s9",module:"skill",title:"Python数据分析",date:y,status:"done",checked:true,detail:{skill_name:"Python",resource:"Coursera课程",study_duration:90,mastery:4,notes:"Pandas数据清洗"},repeat:"none",created_at:y+"T20:00:00Z",updated_at:y+"T20:00:00Z"},
-    {id:"s10",module:"finance",title:"工资",date:yyy,status:"done",checked:true,detail:{amount:15000,type:"income",category:"其他",payment_method:"银行卡",notes:"8月工资",receipt_image:""},repeat:"none",created_at:yyy+"T10:00:00Z",updated_at:yyy+"T10:00:00Z"}
+    {id:"s10",module:"finance",title:"工资",date:yyy,status:"done",checked:true,detail:{amount:15000,type:"income",category:"其他",payment_method:"银行卡",notes:"8月工资",receipt_image:""},repeat:"none",created_at:yyy+"T10:00:00Z",updated_at:yyy+"T10:00:00Z"},
+    {id:"s11",module:"asset_ledger",title:"普拉提私教课（3个月）",date:lsStr,status:"done",checked:true,detail:{amount:5000,service_start:lsStr,service_end:leStr,verify_method:"by_session",total_sessions:24,used_sessions:8,linked_module:"fitness",notes:"每周2次，提升核心力量"},repeat:"none",created_at:lsStr+"T10:00:00Z",updated_at:lsStr+"T10:00:00Z"},
+    {id:"s12",module:"asset_ledger",title:"Python数据分析训练营",date:psStr,status:"done",checked:true,detail:{amount:3800,service_start:psStr,service_end:peStr,verify_method:"by_period",linked_module:"skill",notes:"线上直播+录播回看"},repeat:"none",created_at:psStr+"T10:00:00Z",updated_at:psStr+"T10:00:00Z"}
   ];
 }
 
@@ -791,7 +830,9 @@ function renderMonthView(){
     var dayRecords=getRecordsByDate(ds);
     var modules={};
     var expense=0;
+    var hasLedger=false;
     dayRecords.forEach(function(r){
+      if(r.module==="asset_ledger"){hasLedger=true;return}
       if(!modules[r.module])modules[r.module]=0;
       modules[r.module]++;
       if(r.module==="finance"&&r.detail&&r.detail.type==="expense"){expense+=parseFloat(r.detail.amount)||0}
@@ -804,6 +845,7 @@ function renderMonthView(){
     if(isToday)cls+=" today";
     if(isSelected)cls+=" selected-date";
     html+='<div class="'+cls+'" data-date="'+ds+'">';
+    if(hasLedger)html+='<div class="cal-diamond" title="预付台账"></div>';
     html+='<span class="cal-date">'+cellDate.getDate()+'</span>';
     html+='<div class="cal-dots">'+dots+amtStr+'</div>';
     html+='<button class="cal-add-btn" data-add-date="'+ds+'">+</button></div>';
@@ -958,7 +1000,7 @@ function renderTodaySection(){
 /* ====== MODULE VIEWS ====== */
 function renderModuleTabs(){
   var html="";
-  for(var m in MODULES){if(MODULES.hasOwnProperty(m)){
+  for(var m in MODULES){if(MODULES.hasOwnProperty(m)&&m!=="asset_ledger"){
     var count=records.filter(function(r){return r.module===m}).length;
     html+='<button class="tab'+(state.currentModule===m?' active':'')+'" data-module="'+m+'">';
     html+='<span class="tab-dot" style="background:'+MODULES[m].color+'"></span>';
@@ -970,7 +1012,10 @@ function renderModuleTabs(){
 function renderModuleView(){
   var m=state.currentModule;
   var mod=MODULES[m];
-  document.getElementById("module-title").innerHTML='<span class="tab-dot" style="background:'+mod.color+';width:10px;height:10px"></span>'+mod.name;
+  var titleColor=mod.color;
+  var titleText=mod.name;
+  if(m==="finance"&&state.financeSubTab==="ledger"){titleColor="#0891b2";titleText="预付台账"}
+  document.getElementById("module-title").innerHTML='<span class="tab-dot" style="background:'+titleColor+';width:10px;height:10px"></span>'+titleText;
   var html="";
   // Date filter banner
   if(state.selectedDate){
@@ -983,7 +1028,18 @@ function renderModuleView(){
   else if(m==="skill")html+=renderSkillView(recs);
   else if(m==="work")html+=renderWorkView(recs);
   else if(m==="career")html+=renderCareerView(recs);
-  else if(m==="finance")html+=renderFinanceView(recs);
+  else if(m==="finance"){
+    html+='<div class="fin-subtabs">';
+    html+='<button class="fin-subtab'+(state.financeSubTab==="daily"?" active":"")+'" data-fin-subtab="daily">日常开销</button>';
+    html+='<button class="fin-subtab'+(state.financeSubTab==="ledger"?" active":"")+'" data-fin-subtab="ledger">预付台账</button>';
+    html+='</div>';
+    if(state.financeSubTab==="ledger"){
+      var ledgerRecs=records.filter(function(r){return r.module==="asset_ledger"}).sort(function(a,b){return b.date.localeCompare(a.date)});
+      html+=renderLedgerView(ledgerRecs);
+    }else{
+      html+=renderFinanceView(recs);
+    }
+  }
   document.getElementById("module-content").innerHTML=html;
   // Bind clear date filter
   var clearBtn=document.getElementById("clear-date-filter");
@@ -1252,6 +1308,125 @@ function renderFinanceView(recs){
   return html;
 }
 
+/* ====== LEDGER VIEW ====== */
+function renderLedgerView(recs){
+  var today=todayStr();
+  var totalAmount=recs.reduce(function(s,r){return s+(parseFloat(r.detail.amount)||0)},0);
+  var activeCount=0;
+  recs.forEach(function(r){
+    var status=getLedgerStatus(r,today);
+    if(status==="active"||status==="warning")activeCount++;
+  });
+
+  var html='<div class="ledger-stats">';
+  html+='<div class="stat-card"><div class="stat-value" style="color:#0891b2">¥'+totalAmount.toFixed(0)+'</div><div class="stat-label">预付总额</div></div>';
+  html+='<div class="stat-card"><div class="stat-value">'+activeCount+'</div><div class="stat-label">进行中</div></div>';
+  html+='<div class="stat-card"><div class="stat-value">'+(recs.length-activeCount)+'</div><div class="stat-label">已结束</div></div>';
+  html+='</div>';
+
+  var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
+  if(displayRecs.length===0){
+    html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无预付台账记录':'暂无预付台账记录，点击"新增"添加')+'</div>';
+    return html;
+  }
+  displayRecs.forEach(function(r){
+    var d=r.detail||{};
+    var status=getLedgerStatus(r,today);
+    var statusLabel=status==="active"?"进行中":(status==="warning"?"即将到期":(status==="expired"?"已过期":"已完成"));
+    var statusClass=status==="active"?"active":(status==="warning"?"warning":"expired");
+
+    html+='<div class="ledger-item">';
+    html+='<div class="ledger-item-header">';
+    html+='<div class="ledger-item-title">'+escapeHtml(r.title)+'</div>';
+    html+='<div class="ledger-item-amount">¥'+(parseFloat(d.amount)||0).toFixed(2)+'</div>';
+    html+='</div>';
+
+    html+='<div class="ledger-item-meta">';
+    html+='<span>支付：'+r.date+'</span>';
+    if(d.service_start&&d.service_end)html+='<span>服务期：'+d.service_start+' ~ '+d.service_end+'</span>';
+    html+='<span class="ledger-badge '+statusClass+'">'+statusLabel+'</span>';
+    if(d.linked_module){
+      var lm=MODULES[d.linked_module];
+      html+='<span class="ledger-link-tag" style="background:'+(lm?lm.color:'#3b82f6')+'20;color:'+(lm?lm.color:'#3b82f6')+'">关联'+(lm?lm.short:d.linked_module)+'</span>';
+    }
+    html+='</div>';
+
+    // Progress section
+    if(d.verify_method==="by_session"){
+      var total=parseInt(d.total_sessions)||0;
+      var used=parseInt(d.used_sessions)||0;
+      var remaining=total-used;
+      var pct=total>0?(used/total*100):0;
+      html+='<div class="ledger-progress-section">';
+      html+='<div class="ledger-progress-label"><span>核销进度：'+used+'/'+total+' 次</span><span style="color:'+(remaining>0?'#0891b2':'#ef4444')+';font-weight:600">剩余 '+remaining+' 次</span></div>';
+      html+='<div class="ledger-progress-track"><div class="ledger-progress-fill session" style="width:'+pct.toFixed(0)+'%"></div></div>';
+      html+='</div>';
+    }else if(d.verify_method==="by_period"){
+      var remainingDays=0,totalDays=0,periodPct=0;
+      if(d.service_end){
+        var end=parseDate(d.service_end);
+        var now=new Date();now.setHours(0,0,0,0);
+        remainingDays=Math.ceil((end-now)/(1000*60*60*24));
+        if(d.service_start){
+          var start=parseDate(d.service_start);
+          totalDays=Math.ceil((end-start)/(1000*60*60*24));
+          var elapsed=Math.ceil((now-start)/(1000*60*60*24));
+          periodPct=totalDays>0?Math.min(100,(elapsed/totalDays*100)):0;
+        }
+      }
+      html+='<div class="ledger-progress-section">';
+      html+='<div class="ledger-progress-label"><span>服务周期进度</span><span style="color:'+(remainingDays>0?'#8b5cf6':'#ef4444')+';font-weight:600">'+(remainingDays>0?'剩余 '+remainingDays+' 天':'已到期')+'</span></div>';
+      html+='<div class="ledger-progress-track"><div class="ledger-progress-fill period" style="width:'+periodPct.toFixed(0)+'%"></div></div>';
+      html+='</div>';
+    }
+
+    if(d.notes)html+='<div style="font-size:12px;color:var(--text3);margin-top:4px">'+escapeHtml(d.notes)+'</div>';
+
+    // Actions
+    html+='<div class="ledger-actions" style="margin-top:8px">';
+    if(d.verify_method==="by_session"&&status!=="expired"&&d.used_sessions<d.total_sessions){
+      html+='<button class="ledger-verify-btn" data-increment-session="'+r.id+'">+1次核销</button>';
+    }
+    html+='<button class="ri-btn" data-edit-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+    html+='<button class="ri-btn del" data-delete-id="'+r.id+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>';
+    html+='</div>';
+    html+='</div>';
+  });
+  return html;
+}
+function getLedgerStatus(r,today){
+  var d=r.detail||{};
+  if(d.verify_method==="by_session"){
+    var total=parseInt(d.total_sessions)||0;
+    var used=parseInt(d.used_sessions)||0;
+    if(used>=total)return "completed";
+    return "active";
+  }else if(d.verify_method==="by_period"){
+    if(!d.service_end)return "active";
+    var end=parseDate(d.service_end);
+    var now=new Date();now.setHours(0,0,0,0);
+    var diff=Math.ceil((end-now)/(1000*60*60*24));
+    if(diff<0)return "expired";
+    if(diff<=7)return "warning";
+    return "active";
+  }
+  return "active";
+}
+function incrementSession(id){
+  var r=findRecord(id);
+  if(r&&r.detail&&r.detail.verify_method==="by_session"){
+    var total=parseInt(r.detail.total_sessions)||0;
+    var used=parseInt(r.detail.used_sessions)||0;
+    if(used>=total){showToast("已全部核销完毕");return}
+    r.detail.used_sessions=used+1;
+    r.updated_at=isoNow();
+    saveData();
+    CloudSync.pushRecord(r);
+    renderAll();
+    showToast("已核销1次 · 剩余 "+(total-used-1)+" 次");
+  }
+}
+
 /* ====== CHARTS (SVG) ====== */
 function renderLineChart(data){
   if(data.length<2)return'<div class="empty-state">需要至少2条数据才能绘制趋势</div>';
@@ -1308,14 +1483,14 @@ function renderBarChart(data){
 }
 
 /* ====== MODAL ====== */
-function openModal(date,recordId){
+function openModal(date,recordId,forceModule){
   state.modalDate=date||todayStr();
   state.editingId=recordId||null;
   var overlay=document.getElementById("modal-overlay");
   var body=document.getElementById("modal-body");
   var title=document.getElementById("modal-title");
   var editing=recordId?findRecord(recordId):null;
-  var mod=editing?editing.module:state.currentModule;
+  var mod=editing?editing.module:(forceModule||state.currentModule);
   title.textContent=editing?"编辑记录":"新增目标";
   body.innerHTML=renderModalForm(mod,editing,date);
   overlay.style.display="flex";
@@ -1326,13 +1501,25 @@ function openModal(date,recordId){
       btn.classList.add("active");
       var newMod=btn.dataset.msModule;
       body.querySelector("#form-fields").innerHTML=renderModuleFields(newMod,editing?editing.detail:null);
+      bindDynamicFields(body);
     };
   });
+  bindDynamicFields(body);
+}
+function bindDynamicFields(body){
   // mastery slider
   var masteryInput=body.querySelector("#field-mastery");
   if(masteryInput){
     var masteryDisp=body.querySelector("#mastery-display");
     masteryInput.oninput=function(){masteryDisp.textContent="★".repeat(parseInt(masteryInput.value))+"☆".repeat(5-parseInt(masteryInput.value))};
+  }
+  // verify method toggle (asset_ledger)
+  var verifySelect=body.querySelector("#field-verify-method");
+  if(verifySelect){
+    var sessionFields=body.querySelector("#session-fields");
+    verifySelect.onchange=function(){
+      if(sessionFields){sessionFields.style.display=verifySelect.value==="by_period"?"none":"grid"}
+    };
   }
   // image upload
   var imgInput=body.querySelector("#field-receipt-image");
@@ -1351,18 +1538,29 @@ function openModal(date,recordId){
 }
 function closeModal(){document.getElementById("modal-overlay").style.display="none";state.editingId=null}
 function renderModalForm(mod,editing,date){
-  var html='<div class="module-selector">';
-  for(var m in MODULES){if(MODULES.hasOwnProperty(m)){
-    html+='<button class="ms-btn'+(m===mod?' active':'')+'" data-ms-module="'+m+'"><span class="tab-dot" style="background:'+MODULES[m].color+';width:7px;height:7px"></span>'+MODULES[m].short+'</button>';
-  }}
-  html+='</div>';
-  html+='<div class="form-field"><label>标题</label><input class="form-input" id="field-title" value="'+(editing?escapeHtml(editing.title):"")+'" placeholder="目标名称"></div>';
-  html+='<div class="form-row"><div class="form-field"><label>日期</label><input class="form-input" id="field-date" type="date" value="'+(editing?editing.date:(date||todayStr()))+'"></div>';
-  html+='<div class="form-field"><label>重复规则</label><select class="form-select" id="field-repeat">';
-  var rep=editing?editing.repeat:"none";
-  var opts=[["none","不重复"],["daily","每日"],["weekly:1","每周一"],["weekly:2","每周二"],["weekly:3","每周三"],["weekly:4","每周四"],["weekly:5","每周五"],["weekly:6","每周六"],["weekly:0","每周日"],["monthly:1","每月1号"],["monthly:15","每月15号"]];
-  opts.forEach(function(o){html+='<option value="'+o[0]+'"'+(rep===o[0]?' selected':'')+'>'+o[1]+'</option>'});
-  html+='</select></div></div>';
+  var isLedger=mod==="asset_ledger";
+  var html='';
+  if(isLedger){
+    html+='<input type="hidden" id="form-module" value="asset_ledger">';
+    html+='<div class="module-selector"><div style="padding:6px 12px;background:#ecfeff;border:1px solid #67e8f9;border-radius:8px;font-size:13px;color:#0891b2;font-weight:500;display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:8px;height:8px;background:#0891b2;border-radius:50%"></span>预付台账（大额预付/资产）</div></div>';
+  }else{
+    html+='<div class="module-selector">';
+    for(var m in MODULES){if(MODULES.hasOwnProperty(m)&&m!=="asset_ledger"){
+      html+='<button class="ms-btn'+(m===mod?' active':'')+'" data-ms-module="'+m+'"><span class="tab-dot" style="background:'+MODULES[m].color+';width:7px;height:7px"></span>'+MODULES[m].short+'</button>';
+    }}
+    html+='</div>';
+  }
+  html+='<div class="form-field"><label>'+(isLedger?"项目名称":"标题")+'</label><input class="form-input" id="field-title" value="'+(editing?escapeHtml(editing.title):"")+'" placeholder="'+(isLedger?"如：普拉提私教课（3个月）":"目标名称")+'"></div>';
+  html+='<div class="form-row"><div class="form-field"><label>'+(isLedger?"支付日期":"日期")+'</label><input class="form-input" id="field-date" type="date" value="'+(editing?editing.date:(date||todayStr()))+'"></div>';
+  if(isLedger){
+    html+='<input type="hidden" id="field-repeat" value="none"></div>';
+  }else{
+    html+='<div class="form-field"><label>重复规则</label><select class="form-select" id="field-repeat">';
+    var rep=editing?editing.repeat:"none";
+    var opts=[["none","不重复"],["daily","每日"],["weekly:1","每周一"],["weekly:2","每周二"],["weekly:3","每周三"],["weekly:4","每周四"],["weekly:5","每周五"],["weekly:6","每周六"],["weekly:0","每周日"],["monthly:1","每月1号"],["monthly:15","每月15号"]];
+    opts.forEach(function(o){html+='<option value="'+o[0]+'"'+(rep===o[0]?' selected':'')+'>'+o[1]+'</option>'});
+    html+='</select></div></div>';
+  }
   html+='<div id="form-fields">'+renderModuleFields(mod,editing?editing.detail:null)+'</div>';
   return html;
 }
@@ -1412,13 +1610,30 @@ function renderModuleFields(mod,detail){
     html+='<img class="image-preview" id="image-preview" src="'+(detail.receipt_image||"")+'" style="'+(detail.receipt_image?'':'display:none')+'">';
     html+='<input type="hidden" id="image-data" value="'+(detail.receipt_image||"")+'">';
     html+='</div></div>';
+  }else if(mod==="asset_ledger"){
+    html+='<div class="form-row"><div class="form-field"><label>总支出金额(¥)</label><input class="form-input" id="field-amount" type="number" step="0.01" value="'+(detail.amount||"")+'" placeholder="5000"></div>';
+    html+='<div class="form-field"><label>核销方式</label><select class="form-select" id="field-verify-method">';
+    html+='<option value="by_session"'+(detail.verify_method==="by_session"||!detail.verify_method?' selected':'')+'>按次核销</option>';
+    html+='<option value="by_period"'+(detail.verify_method==="by_period"?' selected':'')+'>按期核销</option>';
+    html+='</select></div></div>';
+    html+='<div class="form-row"><div class="form-field"><label>服务开始日期</label><input class="form-input" id="field-service-start" type="date" value="'+(detail.service_start||"")+'"></div>';
+    html+='<div class="form-field"><label>服务结束日期</label><input class="form-input" id="field-service-end" type="date" value="'+(detail.service_end||"")+'"></div></div>';
+    html+='<div class="form-row" id="session-fields" style="'+(detail.verify_method==="by_period"?'display:none':'')+'"><div class="form-field"><label>总次数</label><input class="form-input" id="field-total-sessions" type="number" value="'+(detail.total_sessions||"")+'" placeholder="24"></div>';
+    html+='<div class="form-field"><label>已使用次数</label><input class="form-input" id="field-used-sessions" type="number" value="'+(detail.used_sessions||"0")+'" placeholder="0"></div></div>';
+    html+='<div class="form-field"><label>关联目标</label><select class="form-select" id="field-linked-module">';
+    html+='<option value=""'+(!detail.linked_module?' selected':'')+'>不关联</option>';
+    html+='<option value="fitness"'+(detail.linked_module==="fitness"?' selected':'')+'>健身减肥</option>';
+    html+='<option value="skill"'+(detail.linked_module==="skill"?' selected':'')+'>技能学习</option>';
+    html+='</select></div>';
+    html+='<div class="form-field"><label>备注</label><textarea class="form-textarea" id="field-notes" placeholder="备注信息">'+escapeHtml(detail.notes||"")+'</textarea></div>';
   }
   return html;
 }
 function handleSubmit(){
   var body=document.getElementById("modal-body");
+  var modInput=body.querySelector("#form-module");
   var activeMs=body.querySelector(".ms-btn.active");
-  var mod=activeMs?activeMs.dataset.msModule:state.currentModule;
+  var mod=modInput?modInput.value:(activeMs?activeMs.dataset.msModule:state.currentModule);
   var title=body.querySelector("#field-title").value.trim();
   if(!title){showToast("请输入标题");return}
   var date=body.querySelector("#field-date").value||todayStr();
@@ -1454,6 +1669,17 @@ function handleSubmit(){
     detail.notes=body.querySelector("#field-notes").value;
     var imgData=body.querySelector("#image-data");
     detail.receipt_image=imgData?imgData.value:"";
+  }else if(mod==="asset_ledger"){
+    detail.amount=parseFloat(body.querySelector("#field-amount").value)||0;
+    detail.verify_method=body.querySelector("#field-verify-method").value;
+    detail.service_start=body.querySelector("#field-service-start").value;
+    detail.service_end=body.querySelector("#field-service-end").value;
+    detail.linked_module=body.querySelector("#field-linked-module").value;
+    detail.notes=body.querySelector("#field-notes").value;
+    if(detail.verify_method==="by_session"){
+      detail.total_sessions=parseInt(body.querySelector("#field-total-sessions").value)||0;
+      detail.used_sessions=parseInt(body.querySelector("#field-used-sessions").value)||0;
+    }
   }
   if(state.editingId){
     updateRecord(state.editingId,{module:mod,title:title,date:date,repeat:repeat,detail:detail});
@@ -1647,10 +1873,16 @@ function setupEvents(){
   // Module tabs
   document.getElementById("module-tabs").addEventListener("click",function(e){
     var tab=e.target.closest(".tab");
-    if(tab){state.currentModule=tab.dataset.module;renderModuleTabs();renderModuleView()}
+    if(tab){state.currentModule=tab.dataset.module;if(state.currentModule!=="finance"){state.financeSubTab="daily"}renderModuleTabs();renderModuleView()}
   });
   // Add button
-  document.getElementById("add-btn").onclick=function(){openModal(state.selectedDate||todayStr(),null)};
+  document.getElementById("add-btn").onclick=function(){
+    if(state.currentModule==="finance"&&state.financeSubTab==="ledger"){
+      openModal(state.selectedDate||todayStr(),null,"asset_ledger");
+    }else{
+      openModal(state.selectedDate||todayStr(),null);
+    }
+  };
   // Modal
   document.getElementById("modal-close").onclick=closeModal;
   document.getElementById("modal-cancel").onclick=closeModal;
@@ -1688,6 +1920,10 @@ function setupEvents(){
       renderModuleView();
       return;
     }
+    var finSubtab=e.target.closest("[data-fin-subtab]");
+    if(finSubtab){state.financeSubTab=finSubtab.dataset.finSubtab;renderModuleView();return}
+    var incSession=e.target.closest("[data-increment-session]");
+    if(incSession){incrementSession(incSession.dataset.incrementSession);return}
   });
   // CSV
   document.getElementById("export-csv-btn").onclick=exportCSV;
