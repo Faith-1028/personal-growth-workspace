@@ -18,7 +18,7 @@
 }
 html{font-size:16px}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
-#app{max-width:1200px;margin:0 auto;padding:12px}
+#app{max-width:1600px;margin:0 auto;padding:12px 16px}
 
 /* Sync bar */
 .sync-bar{background:#fef3c7;color:#92400e;padding:6px 14px;border-radius:8px;font-size:12px;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -122,6 +122,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .stat-label{font-size:11px;color:var(--text3);margin-top:2px}
 .chart-container{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:12px;overflow-x:auto}
 .chart-title{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
+
+/* Module two-column layout: stats+charts on left, record-list on right */
+.module-layout{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+@media(min-width:1100px){.module-layout{grid-template-columns:minmax(0,1fr) 420px}}
+@media(min-width:1400px){.module-layout{grid-template-columns:minmax(0,1fr) 460px}}
+.module-left{min-width:0}
+.module-right{min-width:0;position:sticky;top:8px}
+.module-right .record-list{max-height:calc(100vh - 460px);min-height:300px;padding-right:6px}
+.module-right .ledger-list-wrap{max-height:calc(100vh - 460px);min-height:300px;overflow-y:auto;padding-right:6px}
+@media(max-width:1099px){.module-right{position:static}.module-right .record-list,.module-right .ledger-list-wrap{max-height:520px}}
+
 .record-list{display:flex;flex-direction:column;gap:6px;max-height:460px;overflow-y:auto;overflow-x:hidden;padding-right:4px;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
 .record-list::-webkit-scrollbar{width:6px}
 .record-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
@@ -1101,6 +1112,17 @@ function renderModuleView(){
     }
   }
   document.getElementById("module-content").innerHTML=html;
+  // Split into two-column layout if MR markers present
+  if(html.indexOf("|||MR|||")>-1&&html.indexOf("|||/MR|||")>-1){
+    var parts=html.split("|||MR|||");
+    var restParts=parts[1].split("|||/MR|||");
+    var leftHtml=parts[0];
+    var rightHtml=restParts[0];
+    var tailHtml=restParts.slice(1).join("|||/MR|||");
+    document.getElementById("module-content").innerHTML=
+      '<div class="module-layout"><div class="module-left">'+leftHtml+
+      '</div><div class="module-right">'+rightHtml+'</div></div>'+tailHtml;
+  }
   // Bind clear date filter
   var clearBtn=document.getElementById("clear-date-filter");
   if(clearBtn){clearBtn.onclick=function(){state.selectedDate=null;renderAll()}}
@@ -1123,6 +1145,7 @@ function renderFitnessView(recs){
     html+='</div>';
   }
 
+  html+='|||MR|||';
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
   displayRecs.slice(0,30).forEach(function(r){
@@ -1141,6 +1164,7 @@ function renderFitnessView(recs){
   });
   if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无健身记录':'暂无健身记录，点击"新增"开始记录')+'</div>';
   html+='</div>';
+  html+='|||/MR|||';
   return html;
 }
 function renderSkillView(recs){
@@ -1174,6 +1198,7 @@ function renderSkillView(recs){
   if(Object.keys(skills).length===0)html+='<div class="empty-state">暂无技能数据</div>';
   html+='</div>';
 
+  html+='|||MR|||';
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
   displayRecs.slice(0,30).forEach(function(r){
@@ -1191,6 +1216,7 @@ function renderSkillView(recs){
   });
   if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无学习记录':'暂无学习记录')+'</div>';
   html+='</div>';
+  html+='|||/MR|||';
   return html;
 }
 function renderWorkView(recs){
@@ -1206,6 +1232,7 @@ function renderWorkView(recs){
   html+='<div class="stat-card"><div class="stat-value" style="color:var(--danger)">'+overdue.length+'</div><div class="stat-label">已逾期</div></div>';
   html+='</div>';
 
+  html+='|||MR|||';
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
   displayRecs.slice(0,30).forEach(function(r){
@@ -1238,6 +1265,7 @@ function renderWorkView(recs){
   });
   if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无工作任务':'暂无工作任务')+'</div>';
   html+='</div>';
+  html+='|||/MR|||';
   return html;
 }
 function renderCareerView(recs){
@@ -1272,6 +1300,7 @@ function renderCareerView(recs){
   if(Object.keys(goals).length===0)html+='<div class="empty-state">暂无职业成长记录</div>';
   html+='</div>';
 
+  html+='|||MR|||';
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
   displayRecs.slice(0,30).forEach(function(r){
@@ -1287,6 +1316,7 @@ function renderCareerView(recs){
   });
   if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无职业成长记录':'暂无职业成长记录')+'</div>';
   html+='</div>';
+  html+='|||/MR|||';
   return html;
 }
 function renderFinanceView(recs){
@@ -1361,6 +1391,7 @@ function renderFinanceView(recs){
     html+='</div>';
   }
 
+  html+='|||MR|||';
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
   displayRecs.slice(0,30).forEach(function(r){
@@ -1379,6 +1410,7 @@ function renderFinanceView(recs){
   });
   if(displayRecs.length===0)html+='<div class="empty-state">'+(state.selectedDate?'该日期暂无记账记录':'暂无记账记录')+'</div>';
   html+='</div>';
+  html+='|||/MR|||';
   return html;
 }
 
