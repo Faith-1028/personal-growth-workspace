@@ -117,7 +117,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .stat-label{font-size:11px;color:var(--text3);margin-top:2px}
 .chart-container{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:12px;overflow-x:auto}
 .chart-title{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
-.record-list{display:flex;flex-direction:column;gap:6px}
+.record-list{display:flex;flex-direction:column;gap:6px;max-height:460px;overflow-y:auto;overflow-x:hidden;padding-right:4px;scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+.record-list::-webkit-scrollbar{width:6px}
+.record-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.record-list::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+.record-list::-webkit-scrollbar-track{background:transparent}
 .record-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;background:#f8fafc;transition:.15s}
 .record-item:hover{background:#f1f5f9}
 .ri-check{width:20px;height:20px;border:2px solid var(--border);border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.12s;margin-top:1px}
@@ -324,10 +328,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="header-row">
       <h1 class="title">我的个人工作台</h1>
       <div class="header-controls">
-        <div class="view-toggle">
-          <button class="view-btn active" data-view="month">月视图</button>
-          <button class="view-btn" data-view="week">周视图</button>
-        </div>
         <button class="today-btn" id="today-btn">今日</button>
       </div>
     </div>
@@ -341,9 +341,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <section class="today-section">
     <div class="section-header">
       <h2 class="section-title">今天要处理</h2>
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="month">月视图</button>
+        <button class="view-btn" data-view="week">周视图</button>
+      </div>
     </div>
     <div class="today-content" id="today-content"></div>
   </section>
+
+  <nav class="module-tabs" id="module-tabs"></nav>
 
   <div class="main-content">
     <section class="calendar-section">
@@ -357,8 +363,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <div id="module-content"></div>
     </section>
   </div>
-
-  <nav class="module-tabs" id="module-tabs"></nav>
 
   <section class="backup-section">
     <div class="backup-warning" id="backup-warning" style="display:none"></div>
