@@ -61,9 +61,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .ti-action{padding:4px 10px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap}
 .today-empty{text-align:center;color:var(--text3);font-size:13px;padding:16px}
 
+/* Today + Calendar row */
+.today-calendar-row{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+@media(min-width:900px){.today-calendar-row{grid-template-columns:1fr 1fr}}
+.today-section{margin-bottom:0;max-height:420px;overflow-y:auto}
+@media(max-width:768px){.today-section{max-height:none}}
+
 /* Main content */
-.main-content{display:grid;grid-template-columns:1fr;gap:10px}
-@media(min-width:900px){.main-content{grid-template-columns:1.3fr 1fr}}
+.main-content{display:block}
 
 /* Calendar */
 .calendar-section{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
@@ -338,23 +343,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </header>
 
-  <section class="today-section">
-    <div class="section-header">
-      <h2 class="section-title">今天要处理</h2>
-      <div class="view-toggle">
-        <button class="view-btn active" data-view="month">月视图</button>
-        <button class="view-btn" data-view="week">周视图</button>
+  <div class="today-calendar-row">
+    <section class="today-section">
+      <div class="section-header">
+        <h2 class="section-title">今天要处理</h2>
+        <div class="view-toggle">
+          <button class="view-btn active" data-view="month">月视图</button>
+          <button class="view-btn" data-view="week">周视图</button>
+        </div>
       </div>
-    </div>
-    <div class="today-content" id="today-content"></div>
-  </section>
+      <div class="today-content" id="today-content"></div>
+    </section>
+
+    <section class="calendar-section">
+      <div id="calendar-content"></div>
+    </section>
+  </div>
 
   <nav class="module-tabs" id="module-tabs"></nav>
 
   <div class="main-content">
-    <section class="calendar-section">
-      <div id="calendar-content"></div>
-    </section>
     <section class="module-section">
       <div class="module-header">
         <h2 class="module-title" id="module-title"></h2>
