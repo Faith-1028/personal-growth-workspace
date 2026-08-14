@@ -434,6 +434,7 @@ var MODULES={
   asset_ledger:{name:"预付台账",color:"#0891b2",short:"预付"}
 };
 var FINANCE_CATS={"餐饮":"#f97316","交通":"#3b82f6","购物":"#ec4899","娱乐":"#8b5cf6","住房":"#22c55e","医疗":"#ef4444","教育":"#f59e0b","其他":"#6b7280"};
+var CHANNEL_COLORS={"京东":"#ef4444","淘宝":"#f97316","小红书":"#ec4899","拼多多":"#eab308","美团":"#22c55e","线下":"#6b7280","其他":"#3b82f6"};
 var PRIORITY={high:{label:"高",color:"#ef4444"},medium:{label:"中",color:"#f59e0b"},low:{label:"低",color:"#22c55e"}};
 var WEEKDAYS=["日","一","二","三","四","五","六"];
 
@@ -1334,6 +1335,19 @@ function renderFinanceView(recs){
     html+=renderBarChart(catArr);
     html+='</div>';
   }
+  var channels={};
+  monthRecs.forEach(function(r){
+    if(r.detail.type!=="expense")return;
+    var ch=r.detail.channel;
+    if(!ch)return;
+    channels[ch]=(channels[ch]||0)+(parseFloat(r.detail.amount)||0);
+  });
+  var chArr=Object.keys(channels).map(function(k){return{label:k,value:channels[k],color:CHANNEL_COLORS[k]||"#6b7280"}});
+  if(chArr.length>0){
+    html+='<div class="chart-container"><div class="chart-title">渠道支出</div>';
+    html+=renderBarChart(chArr);
+    html+='</div>';
+  }
 
   html+='<div class="record-list">';
   var displayRecs=state.selectedDate?recs.filter(function(r){return r.date===state.selectedDate}):recs;
@@ -1343,6 +1357,7 @@ function renderFinanceView(recs){
     html+='<div class="ri-body"><div class="ri-title">'+escapeHtml(r.title)+'</div>';
     html+='<div class="ri-meta"><span>'+r.date+'</span>';
     if(r.detail.category)html+='<span>'+escapeHtml(r.detail.category)+'</span>';
+    if(r.detail.channel)html+='<span>'+escapeHtml(r.detail.channel)+'</span>';
     if(r.detail.payment_method)html+='<span>'+escapeHtml(r.detail.payment_method)+'</span>';
     if(r.detail.notes)html+='<span>'+escapeHtml(r.detail.notes)+'</span>';
     html+='</div></div>';
@@ -1650,6 +1665,10 @@ function renderModuleFields(mod,detail){
     html+='<div class="form-field"><label>支付方式</label><select class="form-select" id="field-payment_method">';
     ["微信","支付宝","银行卡","现金","信用卡"].forEach(function(p){html+='<option value="'+p+'"'+(detail.payment_method===p?' selected':'')+'>'+p+'</option>'});
     html+='</select></div></div>';
+    html+='<div class="form-row"><div class="form-field"><label>购买渠道</label><select class="form-select" id="field-channel">';
+    html+='<option value=""'+(!detail.channel?' selected':'')+'>不记录</option>';
+    ["京东","淘宝","小红书","拼多多","美团","线下","其他"].forEach(function(c){html+='<option value="'+c+'"'+(detail.channel===c?' selected':'')+'>'+c+'</option>'});
+    html+='</select></div></div>';
     html+='<div class="form-field"><label>备注</label><textarea class="form-textarea" id="field-notes" placeholder="消费备注">'+escapeHtml(detail.notes||"")+'</textarea></div>';
     html+='<div class="form-field"><label>票据图片</label><div class="image-upload">';
     html+='<input type="file" id="field-receipt-image" accept="image/*">';
@@ -1713,6 +1732,7 @@ function handleSubmit(){
     detail.type=body.querySelector("#field-type").value;
     detail.category=body.querySelector("#field-category").value;
     detail.payment_method=body.querySelector("#field-payment_method").value;
+    detail.channel=body.querySelector("#field-channel").value;
     detail.notes=body.querySelector("#field-notes").value;
     var imgData=body.querySelector("#image-data");
     detail.receipt_image=imgData?imgData.value:"";
