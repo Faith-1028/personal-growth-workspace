@@ -1370,11 +1370,6 @@ function renderFinanceView(recs){
   html+='<div class="stat-card"><div class="stat-value" style="color:'+(income-expense>=0?'var(--success)':'var(--danger)')+'">'+(income-expense>=0?"+":"")+(income-expense).toFixed(0)+'</div><div class="stat-label">本月结余</div></div>';
   html+='</div>';
 
-  if(income>0||expense>0){
-    html+='<div class="chart-row"><div class="chart-row-cell"><div class="chart-title">收支概览</div>';
-    html+=renderDonutChart(income,expense);
-    html+='</div></div>';
-  }
   var catArr=Object.keys(cats).map(function(k){return{label:k,value:cats[k],color:FINANCE_CATS[k]||"#6b7280"}});
   var chArr=[];
   if(catArr.length>0||chArr.length>0){
