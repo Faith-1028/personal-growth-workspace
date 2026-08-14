@@ -453,6 +453,18 @@ function isSampleRecord(r){return /^s\d+$/.test(r.id)}
 function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||"{}")}catch(e){return{}}}
 function saveSettings(s){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(s))}catch(e){}}
 
+/* ====== 删除墓碑：防止已删数据被同步拉回/推回 ====== */
+function getDeletedIds(){try{return JSON.parse(localStorage.getItem("wb_growth_deleted_ids")||"[]")}catch(e){return[]}}
+function isTombstoned(id){return getDeletedIds().indexOf(id)>=0}
+function markDeleted(id){
+  var ids=getDeletedIds();
+  if(ids.indexOf(id)<0){ids.push(id);try{localStorage.setItem("wb_growth_deleted_ids",JSON.stringify(ids))}catch(e){}}
+}
+function unmarkDeleted(id){
+  var ids=getDeletedIds().filter(function(x){return x!==id});
+  try{localStorage.setItem("wb_growth_deleted_ids",JSON.stringify(ids))}catch(e){}
+}
+
 /* ====== CLOUD SYNC (Supabase) ====== */
 var CloudSync={
   url:"https://nsbgduqjmoszhsnzeqjt.supabase.co",
@@ -581,9 +593,10 @@ var CloudSync={
   
   mergeCloudData:function(cloudRecords){
     var cloudMap={};
+    var deletedIds=getDeletedIds();
     cloudRecords.forEach(function(cr){
       var rec=CloudSync.dbRowToRecord(cr);
-      if(rec)cloudMap[rec.id]=rec;
+      if(rec&&!isSampleRecord(rec))cloudMap[rec.id]=rec; // 忽略云端残留的示例数据
     });
     var localMap={};
     records.forEach(function(r){localMap[r.id]=r});
@@ -592,6 +605,12 @@ var CloudSync={
     // Process all cloud records
     for(var id in cloudMap){
       if(cloudMap.hasOwnProperty(id)){
+        // 墓碑记录：跳过并入并重试云端删除，防止已删数据复活
+        if(deletedIds.indexOf(id)>=0){
+          CloudSync.deleteRemote(id);
+          seenIds[id]=true;
+          continue;
+        }
         var cloudRec=cloudMap[id];
         var localRec=localMap[id];
         if(localRec){
@@ -608,6 +627,8 @@ var CloudSync={
     // Process local-only records (push them to cloud)
     for(var lid in localMap){
       if(localMap.hasOwnProperty(lid)&&!seenIds[lid]){
+        // 已删除的本地残留不再推回云端
+        if(deletedIds.indexOf(lid)>=0)continue;
         merged.push(localMap[lid]);
         CloudSync.pushRecord(localMap[lid]);
       }
@@ -618,6 +639,7 @@ var CloudSync={
   
   pushRecord:function(rec){
     if(!this.enabled)return;
+    if(isSampleRecord(rec))return; // 示例数据永不上云
     var row=this.recordToDbRow(rec);
     var url=this.url+"/rest/v1/"+this.table+"?id=eq."+encodeURIComponent(rec.id);
     fetch(url,{
@@ -639,6 +661,7 @@ var CloudSync={
   
   insertRecord:function(rec){
     if(!this.enabled)return;
+    if(isSampleRecord(rec))return; // 示例数据永不上云
     var row=this.recordToDbRow(rec);
     fetch(this.url+"/rest/v1/"+this.table,{
       headers:this.headers(),
@@ -730,12 +753,21 @@ function loadData(){
     var raw=localStorage.getItem(STORAGE_KEY);
     if(raw){records=JSON.parse(raw)}else{records=getSampleData();saveData()}
   }catch(e){records=getSampleData()}
+  // 已有真实数据时，自动清掉本地残留的示例数据
+  if(records.some(function(r){return!isSampleRecord(r)})){
+    var hadSamples=records.some(isSampleRecord);
+    if(hadSamples){
+      records.forEach(function(r){if(isSampleRecord(r))markDeleted(r.id)});
+      records=records.filter(function(r){return!isSampleRecord(r)});
+      saveData();
+    }
+  }
   CloudSync.init();
 }
 function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(records))}catch(e){showToast("存储失败，数据可能过大")}}
 function addRecord(data){data.id=uid();data.created_at=isoNow();data.updated_at=isoNow();records.push(data);saveData();CloudSync.insertRecord(data)}
-function updateRecord(id,updates){var r=findRecord(id);if(r){for(var k in updates){if(updates.hasOwnProperty(k))r[k]=updates[k]}r.updated_at=isoNow();saveData();CloudSync.pushRecord(r)}}
-function deleteRecord(id){records=records.filter(function(r){return r.id!==id});saveData();CloudSync.deleteRemote(id)}
+function updateRecord(id,updates){var r=findRecord(id);if(r){for(var k in updates){if(updates.hasOwnProperty(k))r[k]=updates[k]}r.updated_at=isoNow();unmarkDeleted(id);saveData();CloudSync.pushRecord(r)}}
+function deleteRecord(id){records=records.filter(function(r){return r.id!==id});markDeleted(id);saveData();CloudSync.deleteRemote(id)}
 function findRecord(id){return records.filter(function(r){return r.id===id})[0]}
 
 function getRecordsByDate(date){
@@ -1823,6 +1855,7 @@ function importCSV(text){
     if(!rec.id)rec.id=uid();
     if(!rec.detail)rec.detail={};
     if(!rec.repeat)rec.repeat="none";
+    unmarkDeleted(rec.id);
     var existing=findRecord(rec.id);
     if(existing){var idx=records.indexOf(existing);records[idx]=rec}
     else{records.push(rec)}
@@ -1954,7 +1987,7 @@ function setupEvents(){
   document.getElementById("clear-sample-btn").onclick=function(){
     if(confirm("确认清空示例数据？这将同时从本地和云端删除示例记录。")){
       var sampleRecs=records.filter(isSampleRecord);
-      sampleRecs.forEach(function(r){CloudSync.deleteRemote(r.id)});
+      sampleRecs.forEach(function(r){markDeleted(r.id);CloudSync.deleteRemote(r.id)});
       records=records.filter(function(r){return!isSampleRecord(r)});
       saveData();renderAll();showToast("已清空 "+sampleRecs.length+" 条示例数据")
     }
@@ -1962,7 +1995,7 @@ function setupEvents(){
   // Clear all
   document.getElementById("clear-all-btn").onclick=function(){
     if(confirm("确认清空所有数据？此操作不可恢复！数据将同时从本地和云端删除。")){
-      records.forEach(function(r){CloudSync.deleteRemote(r.id)});
+      records.forEach(function(r){markDeleted(r.id);CloudSync.deleteRemote(r.id)});
       records=[];saveData();renderAll();showToast("已清空所有数据")
     }
   };
