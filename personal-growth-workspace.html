@@ -122,6 +122,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .stat-label{font-size:11px;color:var(--text3);margin-top:2px}
 .chart-container{background:#f8fafc;border-radius:8px;padding:12px;margin-bottom:12px;overflow-x:auto}
 .chart-title{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
+.chart-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.chart-row>.chart-row-cell{flex:1 1 calc(33.333% - 8px);min-width:0;background:#f8fafc;border-radius:8px;padding:12px;box-sizing:border-box}
+.chart-row>.chart-row-cell .chart-title{margin-bottom:8px}
+@media(max-width:900px){.chart-row{flex-direction:column}.chart-row>.chart-row-cell{flex:1 1 100%}}
 
 /* Module two-column layout: stats+charts on left, record-list on right */
 .module-layout{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
@@ -1367,28 +1371,61 @@ function renderFinanceView(recs){
   html+='</div>';
 
   if(income>0||expense>0){
-    html+='<div class="chart-container"><div class="chart-title">收支概览</div>';
+    html+='<div class="chart-row"><div class="chart-row-cell"><div class="chart-title">收支概览</div>';
     html+=renderDonutChart(income,expense);
-    html+='</div>';
+    html+='</div></div>';
   }
   var catArr=Object.keys(cats).map(function(k){return{label:k,value:cats[k],color:FINANCE_CATS[k]||"#6b7280"}});
-  if(catArr.length>0){
-    html+='<div class="chart-container"><div class="chart-title">分类支出</div>';
-    html+=renderBarChart(catArr);
-    html+='</div>';
-  }
-  var channels={};
-  monthRecs.forEach(function(r){
-    if(r.detail.type!=="expense")return;
-    var ch=r.detail.channel;
-    if(!ch)return;
-    channels[ch]=(channels[ch]||0)+(parseFloat(r.detail.amount)||0);
-  });
-  var chArr=Object.keys(channels).map(function(k){return{label:k,value:channels[k],color:CHANNEL_COLORS[k]||"#6b7280"}});
-  if(chArr.length>0){
-    html+='<div class="chart-container"><div class="chart-title">渠道支出</div>';
-    html+=renderBarChart(chArr);
-    html+='</div>';
+  var chArr=[];
+  if(catArr.length>0||chArr.length>0){
+    // collect channel stats
+    var channels={};
+    monthRecs.forEach(function(r){
+      if(r.detail.type!=="expense")return;
+      var ch=r.detail.channel;
+      if(!ch)return;
+      channels[ch]=(channels[ch]||0)+(parseFloat(r.detail.amount)||0);
+    });
+    chArr=Object.keys(channels).map(function(k){return{label:k,value:channels[k],color:CHANNEL_COLORS[k]||"#6b7280"}});
+
+    // Detect whether we have at least 2 charts, only then put in row
+    var chartCount=(income>0||expense>0?1:0)+(catArr.length>0?1:0)+(chArr.length>0?1:0);
+    if(chartCount>=2){
+      html+='<div class="chart-row">';
+      if(income>0||expense>0){
+        html+='<div class="chart-row-cell"><div class="chart-title">收支概览</div>';
+        html+=renderDonutChart(income,expense);
+        html+='</div>';
+      }
+      if(catArr.length>0){
+        html+='<div class="chart-row-cell"><div class="chart-title">分类支出</div>';
+        html+=renderBarChart(catArr);
+        html+='</div>';
+      }
+      if(chArr.length>0){
+        html+='<div class="chart-row-cell"><div class="chart-title">渠道支出</div>';
+        html+=renderBarChart(chArr);
+        html+='</div>';
+      }
+      html+='</div>';
+    } else {
+      // Only one chart - keep original single-column layout
+      if(income>0||expense>0){
+        html+='<div class="chart-container"><div class="chart-title">收支概览</div>';
+        html+=renderDonutChart(income,expense);
+        html+='</div>';
+      }
+      if(catArr.length>0){
+        html+='<div class="chart-container"><div class="chart-title">分类支出</div>';
+        html+=renderBarChart(catArr);
+        html+='</div>';
+      }
+      if(chArr.length>0){
+        html+='<div class="chart-container"><div class="chart-title">渠道支出</div>';
+        html+=renderBarChart(chArr);
+        html+='</div>';
+      }
+    }
   }
 
   html+='|||MR|||';
