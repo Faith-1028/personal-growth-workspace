@@ -18,7 +18,16 @@
 }
 html{font-size:16px}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:linear-gradient(135deg,#f0fdf4 0%,#d1fae5 40%,#f0fdfa 100%);background-attachment:fixed;color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
-#app{max-width:1600px;margin:0 auto;padding:12px 16px}
+/* 背景可爱装饰层 */
+.bg-deco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-deco i{position:absolute;display:block;will-change:transform}
+.bg-deco i svg{display:block;width:100%;height:100%}
+@keyframes bg-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-22px) rotate(10deg)}}
+@keyframes bg-drift{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(16px,-14px) rotate(-12deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes bg-twinkle{0%,100%{opacity:.14;transform:scale(.9)}50%{opacity:.34;transform:scale(1.1)}}
+@keyframes bg-rise{0%{transform:translateY(0) scale(1);opacity:.2}50%{opacity:.32}100%{transform:translateY(-30px) scale(1.06);opacity:.2}}
+@media(prefers-reduced-motion:reduce){.bg-deco i{animation:none!important}}
+#app{position:relative;z-index:1;max-width:1600px;margin:0 auto;padding:12px 16px}
 
 /* Sync bar */
 .sync-bar{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:#166534;padding:6px 14px;border-radius:12px;font-size:12px;text-align:center;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -337,6 +346,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </style>
 </head>
 <body>
+<div class="bg-deco" aria-hidden="true">
+  <i style="left:4%;top:7%;width:56px;height:56px;opacity:.26;animation:bg-float 9s ease-in-out infinite"><svg viewBox="0 0 24 24"><path fill="#6ee7b7" d="M12 2C7.5 6 4.5 10 4.5 14a7.5 7.5 0 0015 0c0-4-3-8-7.5-12z"/><path d="M12 4v15" stroke="#34d399" stroke-width="1.1" fill="none" opacity=".55"/></svg></i>
+  <i style="right:8%;top:28%;width:40px;height:40px;opacity:.22;animation:bg-drift 11s ease-in-out infinite"><svg viewBox="0 0 24 24"><path fill="#86efac" d="M12 2C7.5 6 4.5 10 4.5 14a7.5 7.5 0 0015 0c0-4-3-8-7.5-12z"/><path d="M12 4v15" stroke="#10b981" stroke-width="1.1" fill="none" opacity=".5"/></svg></i>
+  <i style="left:12%;bottom:14%;width:30px;height:30px;opacity:.24;animation:bg-float 7s ease-in-out 1.5s infinite"><svg viewBox="0 0 24 24"><path fill="#6ee7b7" d="M12 2C7.5 6 4.5 10 4.5 14a7.5 7.5 0 0015 0c0-4-3-8-7.5-12z"/><path d="M12 4v15" stroke="#34d399" stroke-width="1.1" fill="none" opacity=".55"/></svg></i>
+  <i style="right:6%;bottom:10%;width:64px;height:64px;opacity:.2;animation:bg-rise 10s ease-in-out infinite"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#a7f3d0"/><circle cx="9" cy="9" r="3.2" fill="#fff" opacity=".55"/></svg></i>
+  <i style="left:30%;top:6%;width:34px;height:34px;opacity:.22;animation:bg-float 8s ease-in-out 2s infinite"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#67e8f9"/><circle cx="9" cy="9" r="3.2" fill="#fff" opacity=".55"/></svg></i>
+  <i style="left:48%;top:12%;width:26px;height:26px;animation:bg-twinkle 5s ease-in-out infinite"><svg viewBox="0 0 24 24"><path fill="#67e8f9" d="M12 2l2.2 7.6 7.6 2.2-7.6 2.2L12 21l-2.2-7L2.2 11.8l7.6-2.2z"/></svg></i>
+  <i style="right:24%;top:62%;width:22px;height:22px;animation:bg-twinkle 6s ease-in-out 1s infinite"><svg viewBox="0 0 24 24"><path fill="#5eead4" d="M12 2l2.2 7.6 7.6 2.2-7.6 2.2L12 21l-2.2-7L2.2 11.8l7.6-2.2z"/></svg></i>
+  <i style="left:6%;top:54%;width:18px;height:18px;animation:bg-twinkle 4.5s ease-in-out .5s infinite"><svg viewBox="0 0 24 24"><path fill="#67e8f9" d="M12 2l2.2 7.6 7.6 2.2-7.6 2.2L12 21l-2.2-7L2.2 11.8l7.6-2.2z"/></svg></i>
+  <i style="right:14%;bottom:34%;width:28px;height:28px;opacity:.2;animation:bg-float 12s ease-in-out 3s infinite"><svg viewBox="0 0 24 24"><path fill="#fda4af" d="M12 21C7.5 17.5 3.5 14 3.5 9.5a4 4 0 018.5-1 4 4 0 018.5 1c0 4.5-4 8-8.5 11.5z"/></svg></i>
+  <i style="left:40%;bottom:8%;width:38px;height:38px;opacity:.18;animation:bg-drift 13s ease-in-out infinite"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="#a7f3d0"/></svg></i>
+</div>
 <div id="app">
   <div id="js-error-box" style="display:none;background:#fee;color:#900;padding:12px;margin:8px;border-radius:6px;font-family:monospace;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto"></div>
   <div class="sync-status offline" id="sync-status">
