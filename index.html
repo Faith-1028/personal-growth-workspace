@@ -191,6 +191,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:rgba(16,185,129,.25);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:flex-end;justify-content:center;padding:0}
 @media(min-width:600px){.modal-overlay{align-items:center;padding:20px}}
+/* 快捷记录：浮动按钮 + 语音/文本输入浮层 */
+.quick-fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;box-shadow:0 6px 20px rgba(16,185,129,.35),0 2px 8px rgba(6,182,212,.2);cursor:pointer;z-index:998;display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
+.quick-fab:active{transform:scale(.9)}
+.quick-fab svg{width:26px;height:26px}
+.quick-fab.has-panel{transform:scale(0) rotate(90deg);opacity:0;pointer-events:none}
+.quick-panel{position:fixed;right:18px;bottom:calc(80px + env(safe-area-inset-bottom));width:calc(100% - 36px);max-width:430px;background:var(--card);border-radius:18px;box-shadow:0 12px 40px rgba(16,185,129,.22),0 4px 12px rgba(6,182,212,.1);border:1px solid #d1fae5;z-index:999;padding:14px;opacity:0;transform:translateY(12px) scale(.97);pointer-events:none;transition:opacity .2s,transform .2s}
+.quick-panel.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+.quick-panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.quick-panel-title{font-size:14px;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:6px}
+.quick-panel-close{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1;border-radius:8px}
+.quick-panel-close:hover{background:#d1fae5;color:var(--primary)}
+.quick-input-wrap{display:flex;gap:8px;align-items:flex-start}
+.quick-input{flex:1;width:100%;border:1.5px solid #d1fae5;border-radius:12px;padding:10px 12px;font-size:16px;font-family:inherit;resize:none;min-height:44px;max-height:120px;outline:none;transition:.15s;background:#f0fdf4;color:var(--text);line-height:1.5}
+.quick-input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,.12)}
+.quick-mic{width:44px;height:44px;border-radius:12px;border:none;background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.quick-mic svg{width:22px;height:22px}
+.quick-mic:hover{background:linear-gradient(135deg,#a7f3d0,#6ee7b7)}
+.quick-mic.recording{background:linear-gradient(135deg,#fda4af,#fb7185);color:#fff;animation:micPulse 1.2s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(251,113,133,.45)}50%{box-shadow:0 0 0 12px rgba(251,113,133,0)}}
+.quick-actions{display:flex;gap:8px;margin-top:10px}
+.quick-parse-btn{flex:1;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.quick-parse-btn:active{transform:scale(.97)}
+.quick-parse-btn.secondary{background:linear-gradient(135deg,#d1fae5,#a7f3d0);color:var(--primary)}
+.quick-preview{margin-top:10px;padding:10px 12px;border-radius:11px;background:linear-gradient(135deg,#f0fdf4,#d1fae5);font-size:12px;color:var(--text2);line-height:1.6;display:none}
+.quick-preview.show{display:block}
+.quick-preview b{color:var(--primary)}
+.quick-preview .qp-item{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.quick-hint{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6}
+.quick-hint code{background:#f0fdf4;padding:1px 5px;border-radius:4px;color:var(--primary);font-family:inherit;font-size:11px}
+@media(max-width:600px){.quick-fab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:50px;height:50px}.quick-panel{right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:none;padding:12px}}
 .modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;animation:slideUp .2s ease;box-shadow:0 -4px 20px rgba(16,185,129,.15)}
 @media(min-width:600px){.modal{border-radius:20px;box-shadow:0 8px 32px rgba(16,185,129,.18)}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -467,6 +497,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 快捷记录：语音/文字 → 自然语言解析 -->
+<button class="quick-fab" id="quick-fab" aria-label="快捷记录" title="快捷记录 / 语音输入">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3z" fill="currentColor"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+<div class="quick-panel" id="quick-panel" role="dialog" aria-label="快捷记录">
+  <div class="quick-panel-head">
+    <div class="quick-panel-title">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3z" fill="currentColor"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      快捷记录
+    </div>
+    <button class="quick-panel-close" id="quick-panel-close" aria-label="关闭">&times;</button>
+  </div>
+  <div class="quick-input-wrap">
+    <textarea class="quick-input" id="quick-input" rows="2" placeholder="说一句话，自动解析成记录…&#10;如：今天做了30分钟爬楼机"></textarea>
+    <button class="quick-mic" id="quick-mic" aria-label="语音输入" title="点击说话">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3z" fill="currentColor"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="quick-preview" id="quick-preview"></div>
+  <div class="quick-actions">
+    <button class="quick-parse-btn" id="quick-parse-btn">解析并填写</button>
+  </div>
+  <div class="quick-hint">支持语音/文字。示例：<code>今天做了30分钟爬楼机</code> · <code>午餐花了28元美团</code> · <code>学了1小时React</code> · <code>下午开会讨论需求</code> · <code>昨天跑步5公里消耗350卡</code></div>
+</div>
 
 <script>
 "use strict";
@@ -1696,6 +1751,211 @@ function bindDynamicFields(body){
   }
 }
 function closeModal(){document.getElementById("modal-overlay").style.display="none";state.editingId=null}
+
+/* ====== 快捷记录：语音/文字 → 自然语言解析 → 预填表单 ====== */
+function parseQuickInput(raw){
+  var text=(raw||"").trim();
+  var result={module:state.currentModule||"fitness",title:raw,date:todayStr(),detail:{}};
+  if(!text)return result;
+  /* 1. 日期 */
+  var dateOffset=0;
+  if(/大前天/.test(text))dateOffset=-3;
+  else if(/前天/.test(text))dateOffset=-2;
+  else if(/昨天|昨日/.test(text))dateOffset=-1;
+  else if(/后天/.test(text))dateOffset=2;
+  else if(/明天|明日/.test(text))dateOffset=1;
+  var mDate=text.match(/(\d{1,2})月(\d{1,2})[日号]/);
+  if(mDate){
+    var now=new Date();
+    var mm=parseInt(mDate[1]),dd=parseInt(mDate[2]),y=now.getFullYear();
+    if(mm<now.getMonth()+1||(mm===now.getMonth()+1&&dd<now.getDate()))y++;
+    result.date=y+"-"+pad(mm)+"-"+pad(dd);
+  }else if(dateOffset!==0){
+    var d=new Date();d.setDate(d.getDate()+dateOffset);
+    result.date=fmtDate(d);
+  }
+  /* 2. 信号词 */
+  var hasAmount=/(\d+(?:\.\d+)?)\s*[元块]|¥\s*\d|\d+(?:\.\d+)?\s*￥|花了|花费|消费|支出|收入|工资|收款|进账|报销/.test(text);
+  var foodHit=/(早餐|早饭|午餐|午饭|晚餐|晚饭|宵夜|外卖|奶茶|咖啡|零食|餐厅|火锅|烧烤|麦当劳|肯德基|星巴克|饮料|水果|蔬菜|买菜|食堂|吃饭|吃了)/.test(text);
+  var transitHit=/(打车|地铁|公交|加油|停车|高铁|机票|滴滴|出租|高速|过路|单车|充电桩)/.test(text);
+  var shopHit=/(买[了到]?|购物|京东|淘宝|小红书|拼多多|美团|超市|衣服|鞋子|数码|化妆品|护肤|纸巾|洗衣液|日用品)/.test(text);
+  var funHit=/(电影|游戏|ktv|KTV|演唱会|剧本杀|密室|网吧|会员|视频会员|小说)/.test(text);
+  var houseHit=/(房租|水电|物业|燃气|宽带|网费)/.test(text);
+  var medHit=/(买药|医院|看病|挂号|体检|牙医|门诊)/.test(text);
+  var eduHit=/(课程费|培训费|学费|报班|网课费)/.test(text);
+  var channelHit=/(京东|淘宝|小红书|拼多多|美团|线下)/.test(text);
+  var isFinance=hasAmount||((foodHit||transitHit||shopHit||funHit||houseHit||medHit||eduHit||channelHit)&&!/运动|锻炼|跑步|健身/.test(text));
+  var exTypes=["爬楼机","爬楼","跑步机","跑步","慢跑","快走","俯卧撑","仰卧起坐","深蹲","平板支撑","平板","瑜伽","游泳","骑行","跳绳","哑铃","杠铃","力量训练","有氧","拉伸","hiit","HIIT","椭圆机","划船机","登山机","波比跳","引体向上","卷腹","硬拉","卧推"];
+  var exType=null;
+  for(var i=0;i<exTypes.length;i++){if(text.indexOf(exTypes[i])>=0){exType=exTypes[i];break}}
+  var fitnessHit=!!exType||/(运动|健身|减肥|锻炼|跑了|跳了|练了|爬楼|公里|km|千卡|大卡|卡路里|体脂|体重)/.test(text);
+  var skills=["Python","React","Vue","Java","JavaScript","TypeScript","CSS","HTML","Go","Rust","SQL","Linux","Docker","Git","算法","数据结构","机器学习","深度学习","英语","日语","韩语","编程","前端","后端","全栈","Figma"];
+  var low=text.toLowerCase();
+  var skillName=null;
+  for(var j=0;j<skills.length;j++){if(low.indexOf(skills[j].toLowerCase())>=0){skillName=skills[j];break}}
+  var skillHit=!!skillName||/(学了?|学习|看书|背单词|刷题|复习|预习|做练习|听课|看文档|看教程|看了)/.test(text);
+  var workHit=/(开会|会议|项目|需求|bug|BUG|文档|汇报|周报|日报|对接|评审|上线|部署|测试|调试|编码|写代码|改需求|完成任务|deadline|截止|加班|跟进|讨论|评审)/.test(text);
+  var careerHit=/(职业|成长|复盘|目标|里程碑|简历|面试|跳槽|规划|晋升|述职|OKR|okr)/.test(text);
+  /* 3. 模块判定（优先级） */
+  if(isFinance)result.module="finance";
+  else if(fitnessHit)result.module="fitness";
+  else if(skillHit)result.module="skill";
+  else if(workHit)result.module="work";
+  else if(careerHit)result.module="career";
+  /* 4. 数值 */
+  var dur=null;
+  var mMin=text.match(/(\d+)\s*分钟/);if(mMin)dur=parseInt(mMin[1]);
+  if(!dur){var mHrMin=text.match(/(\d+)\s*小时\s*(\d+)\s*分/);if(mHrMin)dur=parseInt(mHrMin[1])*60+parseInt(mHrMin[2])}
+  if(!dur){var mHr=text.match(/(\d+(?:\.\d+)?)\s*小时/);if(mHr){var hf=parseFloat(mHr[1]);dur=Math.round(hf*60)}}
+  if(!dur){var mMin2=text.match(/(\d+)\s*分(?!类|钟|钱|红|析)/);if(mMin2)dur=parseInt(mMin2[1])}
+  if(!dur&&/半小时/.test(text))dur=30;
+  if(!dur&&/一刻钟/.test(text))dur=15;
+  var amt=null;
+  var mAmt=text.match(/(\d+(?:\.\d+)?)\s*[元块]/);if(mAmt)amt=parseFloat(mAmt[1]);
+  if(amt===null){var mY=text.match(/[¥￥]\s*(\d+(?:\.\d+)?)/);if(mY)amt=parseFloat(mY[1])}
+  var cal=null;var mCal=text.match(/(\d+)\s*(千卡|大卡|卡路里|卡)/);if(mCal)cal=parseInt(mCal[1]);
+  var wt=null;var mWt=text.match(/(\d+(?:\.\d+)?)\s*(公斤|kg|KG|Kg)/);if(mWt)wt=parseFloat(mWt[1]);
+  if(wt===null){var mJin=text.match(/(\d+(?:\.\d+)?)\s*斤/);if(mJin)wt=parseFloat(mJin[1])/2}
+  var bf=null;var mBf=text.match(/体脂(?:率)?\s*(\d+(?:\.\d+)?)\s*%/);if(!mBf)mBf=text.match(/(\d+(?:\.\d+)?)\s*%\s*体脂/);if(mBf)bf=parseFloat(mBf[1]);
+  var km=null;var mKm=text.match(/(\d+(?:\.\d+)?)\s*(公里|km|KM)/);if(mKm)km=parseFloat(mKm[1]);
+  /* 5. 按模块填字段 */
+  if(result.module==="fitness"){
+    result.detail.exercise_type=exType||"";
+    if(dur)result.detail.duration=dur;
+    if(cal)result.detail.calories=cal;
+    if(wt)result.detail.weight=wt;
+    if(bf)result.detail.body_fat=bf;
+    var parts=[];if(exType)parts.push(exType);if(dur)parts.push(dur+"分钟");if(cal&&!dur)parts.push("消耗"+cal+"卡");
+    result.title=parts.length?parts.join(" "):"运动记录";
+  }else if(result.module==="finance"){
+    result.detail.type=/收入|工资|收款|进账|赚到|赚了|报销/.test(text)?"income":"expense";
+    if(amt)result.detail.amount=amt;
+    var cat="其他";
+    if(foodHit)cat="餐饮";else if(transitHit)cat="交通";else if(shopHit)cat="购物";else if(funHit)cat="娱乐";else if(houseHit)cat="住房";else if(medHit)cat="医疗";else if(eduHit)cat="教育";
+    result.detail.category=cat;
+    var ch=null;var chs=["京东","淘宝","小红书","拼多多","美团","线下"];
+    for(var ci=0;ci<chs.length;ci++){if(text.indexOf(chs[ci])>=0){ch=chs[ci];break}}
+    if(ch)result.detail.channel=ch;
+    result.title=cat+(amt?(" ¥"+amt):"");
+  }else if(result.module==="skill"){
+    result.detail.skill_name=skillName||"";
+    if(dur)result.detail.study_duration=dur;
+    result.title=(skillName?("学习"+skillName):"学习记录")+(dur?(" "+dur+"分钟"):"");
+  }else if(result.module==="work"){
+    result.detail.priority=/紧急|急|重要|asap|ASAP|p0|P0|今天必须/.test(text)?"high":"medium";
+    var proj=text.match(/([\u4e00-\u9fa5A-Za-z0-9]{2,8})\s*项目/);
+    if(proj)result.detail.project=proj[1];
+    var wk=text.replace(/今天|今日|昨天|前天|明天|后天|大前天|做了|完成|开?了一个?会|会议|工作|任务|了|的|\d+分钟|\d+小时/g,"").trim();
+    result.title=wk.slice(0,24)||"工作任务";
+  }else if(result.module==="career"){
+    if(/复盘/.test(text))result.detail.review=raw;
+    var cr=text.replace(/今天|今日|昨天|前天|明天|复盘|成长|职业|了/g,"").trim();
+    result.title=cr.slice(0,24)||"职业成长";
+  }
+  return result;
+}
+function openModalPreset(preset){
+  state.modalDate=preset.date||todayStr();
+  state.editingId=null;
+  var overlay=document.getElementById("modal-overlay");
+  var body=document.getElementById("modal-body");
+  var title=document.getElementById("modal-title");
+  title.textContent="快捷记录 · 确认后保存";
+  var editing={module:preset.module,title:preset.title,date:preset.date,repeat:"none",detail:preset.detail};
+  body.innerHTML=renderModalForm(preset.module,editing,preset.date);
+  overlay.style.display="flex";
+  body.querySelectorAll(".ms-btn").forEach(function(btn){
+    btn.classList.toggle("active",btn.dataset.msModule===preset.module);
+    btn.onclick=function(){
+      body.querySelectorAll(".ms-btn").forEach(function(b){b.classList.remove("active")});
+      btn.classList.add("active");
+      var newMod=btn.dataset.msModule;
+      body.querySelector("#form-fields").innerHTML=renderModuleFields(newMod,null);
+      bindDynamicFields(body);
+    };
+  });
+  bindDynamicFields(body);
+  showToast("已填入表单，请核对后点保存");
+}
+var _quickRecog=null,_quickBaseText="";
+function initQuickRecord(){
+  var fab=document.getElementById("quick-fab");
+  var panel=document.getElementById("quick-panel");
+  var input=document.getElementById("quick-input");
+  var mic=document.getElementById("quick-mic");
+  var parseBtn=document.getElementById("quick-parse-btn");
+  var closeBtn=document.getElementById("quick-panel-close");
+  var preview=document.getElementById("quick-preview");
+  if(!fab||!panel)return;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  function togglePanel(open){
+    var show=open!==undefined?open:!panel.classList.contains("show");
+    panel.classList.toggle("show",show);
+    fab.classList.toggle("has-panel",show);
+    if(show)setTimeout(function(){input.focus()},60);
+  }
+  fab.onclick=function(){togglePanel()};
+  closeBtn.onclick=function(){togglePanel(false)};
+  function renderPreview(preset){
+    if(!preset||!preset.title){preview.classList.remove("show");return}
+    var modName=MODULES[preset.module]?MODULES[preset.module].name:preset.module;
+    var d=preset.detail||{};
+    var bits=[];
+    if(d.duration)bits.push("时长 "+d.duration+"分钟");
+    if(d.calories)bits.push("消耗 "+d.calories+"卡");
+    if(d.weight)bits.push("体重 "+d.weight+"kg");
+    if(d.amount)bits.push((d.type==="income"?"收入":"支出")+" ¥"+d.amount);
+    if(d.category)bits.push("分类 "+d.category);
+    if(d.channel)bits.push("渠道 "+d.channel);
+    if(d.study_duration)bits.push("学习 "+d.study_duration+"分钟");
+    if(d.skill_name)bits.push("技能 "+d.skill_name);
+    if(d.exercise_type)bits.push("运动 "+d.exercise_type);
+    var extra=bits.length?('<br><span style="color:var(--text2)">'+bits.map(function(b){return"• "+b}).join("　")+"</span>"):"";
+    preview.innerHTML='<div class="qp-item">已识别 → <b>'+escapeHtml(modName)+'</b>：'+escapeHtml(preset.title)+(preset.date!==todayStr()?('　<span style="color:var(--text3)">'+preset.date+'</span>'):"")+'</div>'+extra+'<br><button class="quick-parse-btn" style="margin-top:8px" id="quick-confirm-btn">确认填入表单 →</button>';
+    preview.classList.add("show");
+    var cb=document.getElementById("quick-confirm-btn");
+    if(cb)cb.onclick=function(){togglePanel(false);openModalPreset(preset)};
+  }
+  function doParse(){
+    var v=input.value.trim();
+    if(!v){showToast("请输入或语音说一句话");input.focus();return}
+    renderPreview(parseQuickInput(v));
+  }
+  parseBtn.onclick=doParse;
+  input.addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doParse()}});
+  input.addEventListener("input",function(){if(!input.value.trim())preview.classList.remove("show")});
+  if(SR){
+    _quickRecog=new SR();
+    _quickRecog.lang="zh-CN";
+    _quickRecog.continuous=false;
+    _quickRecog.interimResults=true;
+    _quickRecog.onstart=function(){mic.classList.add("recording");input.placeholder="正在聆听…说完停顿即可"};
+    _quickRecog.onerror=function(e){mic.classList.remove("recording");showToast("语音识别异常："+(e.error==="not-allowed"?"请允许麦克风权限":e.error||"未知"))};
+    _quickRecog.onend=function(){mic.classList.remove("recording");input.placeholder="说一句话，自动解析成记录…\n如：今天做了30分钟爬楼机"};
+    _quickRecog.onresult=function(e){
+      var interim="",finalT="";
+      for(var i=e.resultIndex;i<e.results.length;i++){
+        var t=e.results[i][0].transcript;
+        if(e.results[i].isFinal)finalT+=t;else interim+=t;
+      }
+      if(finalT){_quickBaseText+=finalT;input.value=_quickBaseText;renderPreview(parseQuickInput(input.value))}
+      else if(interim){input.value=_quickBaseText+interim}
+    };
+    mic.onclick=function(){
+      if(mic.classList.contains("recording")){try{_quickRecog.stop()}catch(e){}return}
+      _quickBaseText=input.value||"";
+      try{_quickRecog.start()}catch(err){showToast("点击麦克风开始语音输入")}
+    };
+  }else{
+    mic.style.opacity="0.5";
+    mic.title="当前浏览器不支持语音，请用文字输入";
+    mic.onclick=function(){showToast("当前浏览器不支持语音识别，请直接输入文字（Chrome/Edge 支持）")};
+  }
+  // 点击外部关闭
+  document.addEventListener("click",function(e){
+    if(panel.classList.contains("show")&&!panel.contains(e.target)&&e.target!==fab&&!fab.contains(e.target)){togglePanel(false)}
+  });
+}
 function renderModalForm(mod,editing,date){
   var isLedger=mod==="asset_ledger";
   var html='';
@@ -2150,6 +2410,7 @@ function init(){
     loadData();
     setupEvents();
     setupSwipe();
+    initQuickRecord();
     renderAll();
   }catch(err){
     var box=document.getElementById("js-error-box");
