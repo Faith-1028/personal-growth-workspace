@@ -218,6 +218,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .quick-preview.show{display:block}
 .quick-preview b{color:var(--primary)}
 .quick-preview .qp-item{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.quick-status-bar{margin-top:8px;padding:8px 12px;border-radius:9px;font-size:12px;line-height:1.5;align-items:center;transition:.15s}
+.quick-status-bar[hidden]{display:none}
 .quick-hint{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6}
 .quick-hint code{background:#f0fdf4;padding:1px 5px;border-radius:4px;color:var(--primary);font-family:inherit;font-size:11px}
 @media(max-width:600px){.quick-fab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:50px;height:50px}.quick-panel{right:14px;bottom:calc(72px + env(safe-area-inset-bottom));width:calc(100% - 28px);max-width:none;padding:12px}}
@@ -516,6 +518,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3z" fill="currentColor"/><path d="M19 11a7 7 0 01-14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
+  <div class="quick-status-bar" id="quick-status-bar" hidden></div>
   <div class="quick-preview" id="quick-preview"></div>
   <div class="quick-actions">
     <button class="quick-parse-btn" id="quick-parse-btn">解析并填写</button>
@@ -1888,6 +1891,29 @@ function initQuickRecord(){
   var preview=document.getElementById("quick-preview");
   if(!fab||!panel)return;
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var _quickTier="—",_quickNoResultTimer=null,_quickStartedAt=0,_quickNetWarnShown=false;
+  var _quickIsEdge=/Edg\//.test(navigator.userAgent);
+  function clearNoResultTimer(){if(_quickNoResultTimer){clearTimeout(_quickNoResultTimer);_quickNoResultTimer=null}}
+  function setQuickStatus(msg,kind){
+    var bar=document.getElementById("quick-status-bar");
+    if(!bar)return;
+    if(!msg){bar.hidden=true;bar.innerHTML="";return}
+    if(!kind)kind="err";
+    bar.hidden=false;
+    var color=kind==="warn"?"#b45309":kind==="err"?"#b91c1c":kind==="ok"?"#15803d":"#475569";
+    var bg=kind==="warn"?"#fef3c7":kind==="err"?"#fee2e2":kind==="ok"?"#dcfce7":"#e0f2fe";
+    bar.innerHTML='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+color+';margin-right:6px;vertical-align:middle"></span>'+msg;
+    bar.style.background=bg;
+    bar.style.color=color;
+    bar.style.border="1px solid "+(kind==="err"?"#fecaca":kind==="warn"?"#fde68a":kind==="ok"?"#bbf7d0":"#bae6fd");
+  }
+  function detectEnv(){
+    var ua=navigator.userAgent;
+    var browser=/Edg\//.test(ua)?"Edge":/Chrome\//.test(ua)?"Chrome":/Firefox\//.test(ua)?"Firefox":/Safari\//.test(ua)?"Safari":"浏览器";
+    var online=navigator.onLine!==false;
+    var lang=(navigator.language||"").toLowerCase();
+    return {browser:browser,online:online,lang:lang,isEdge:_quickIsEdge,isChrome:browser==="Chrome"};
+  }
   function togglePanel(open){
     var show=open!==undefined?open:!panel.classList.contains("show");
     panel.classList.toggle("show",show);
@@ -1929,27 +1955,100 @@ function initQuickRecord(){
     _quickRecog.lang="zh-CN";
     _quickRecog.continuous=false;
     _quickRecog.interimResults=true;
-    _quickRecog.onstart=function(){mic.classList.add("recording");input.placeholder="正在聆听…说完停顿即可"};
-    _quickRecog.onerror=function(e){mic.classList.remove("recording");showToast("语音识别异常："+(e.error==="not-allowed"?"请允许麦克风权限":e.error||"未知"))};
-    _quickRecog.onend=function(){mic.classList.remove("recording");input.placeholder="说一句话，自动解析成记录…\n如：今天做了30分钟爬楼机"};
+    function startQuickRecog(){
+      var env=detectEnv();
+      if(!env.online){setQuickStatus("当前离线，语音识别不可用——请改用文字输入 ↓","err");try{_quickRecog.abort()}catch(e){}return}
+      _quickBaseText=input.value||"";
+      _quickStartedAt=Date.now();
+      _quickNetWarnShown=false;
+      clearNoResultTimer();
+      _quickNoResultTimer=setTimeout(function(){
+        if(mic.classList.contains("recording")){
+          try{_quickRecog.stop()}catch(e){}
+          setQuickStatus("30 秒未识别到语音，已自动停止。可再点麦克风重试，或直接打字 ↓","warn");
+        }
+      },30000);
+      try{
+        _quickRecog.start();
+        mic.classList.add("recording");
+        setQuickStatus("正在聆听…请正常说话；停顿后会识别","ok");
+        if(env.browser==="Chrome"&&!env.isEdge){
+          setTimeout(function(){
+            if(mic.classList.contains("recording")&&(!input.value||input.value===_quickBaseText)&&!_quickNetWarnShown){
+              _quickNetWarnShown=true;
+              setQuickStatus("国内 Chrome 常连不上 Google 语音服务，等几秒看会不会好；或直接打字更稳 ↓","warn");
+            }
+          },5000);
+        }
+      }catch(err){
+        clearNoResultTimer();
+        mic.classList.remove("recording");
+        setQuickStatus("启动失败："+(err&&err.message?err.message:"未知")+"——请用文字输入","err");
+      }
+    }
+    _quickRecog.onstart=function(){mic.classList.add("recording")};
+    _quickRecog.onerror=function(e){
+      clearNoResultTimer();
+      mic.classList.remove("recording");
+      var er=e.error||"unknown",env=detectEnv(),reason="",hint="",kind="err";
+      switch(er){
+        case "network":
+          reason=env.browser==="Chrome"&&!env.isEdge?"Chrome 在国内环境连不上 Google 语音服务":"网络连不上语音服务";
+          hint="👉 请直接打字输入，或换 Edge 浏览器试试（Edge 用微软服务可能更稳）";
+          _quickTier="downgrade";
+          mic.style.opacity="0.5";
+          mic.style.cursor="not-allowed";
+          mic.title="语音服务不可用，已自动降级，请用文字输入";
+          break;
+        case "not-allowed":
+        case "service-not-allowed":
+          reason="浏览器拒绝了麦克风权限";
+          hint="👉 点地址栏左侧锁形图标 → 允许麦克风 → 刷新页面";
+          break;
+        case "no-speech":
+          reason="没有检测到语音输入";
+          hint="👉 再试一次，或直接打字";
+          kind="warn";
+          break;
+        case "audio-capture":
+          reason="没找到麦克风设备";
+          hint="👉 请检查麦克风是否插好/启用";
+          break;
+        case "aborted":
+          return;
+        default:
+          reason="未知错误 ("+er+")";
+          hint="👉 请直接打字输入";
+      }
+      setQuickStatus(reason+"。"+hint,kind);
+    };
+    _quickRecog.onend=function(){
+      clearNoResultTimer();
+      mic.classList.remove("recording");
+      if(input.value&&input.value.trim()){
+        setQuickStatus("识别完成，请确认或继续编辑 ↓","ok");
+      }
+    };
     _quickRecog.onresult=function(e){
       var interim="",finalT="";
       for(var i=e.resultIndex;i<e.results.length;i++){
         var t=e.results[i][0].transcript;
         if(e.results[i].isFinal)finalT+=t;else interim+=t;
       }
-      if(finalT){_quickBaseText+=finalT;input.value=_quickBaseText;renderPreview(parseQuickInput(input.value))}
+      if(finalT){_quickBaseText+=finalT;input.value=_quickBaseText;renderPreview(parseQuickInput(input.value));_quickNetWarnShown=true;setQuickStatus("识别完成，请点「解析并填写」或继续补充 ↓","ok")}
       else if(interim){input.value=_quickBaseText+interim}
     };
+    _quickRecog.onnomatch=function(){setQuickStatus("没听清，请再说一次或直接打字 ↓","warn")};
     mic.onclick=function(){
       if(mic.classList.contains("recording")){try{_quickRecog.stop()}catch(e){}return}
-      _quickBaseText=input.value||"";
-      try{_quickRecog.start()}catch(err){showToast("点击麦克风开始语音输入")}
+      if(_quickTier==="downgrade"){setQuickStatus("语音已自动降级，请直接打字输入 ↓","warn");input.focus();return}
+      startQuickRecog();
     };
   }else{
     mic.style.opacity="0.5";
+    mic.style.cursor="not-allowed";
     mic.title="当前浏览器不支持语音，请用文字输入";
-    mic.onclick=function(){showToast("当前浏览器不支持语音识别，请直接输入文字（Chrome/Edge 支持）")};
+    mic.onclick=function(){setQuickStatus("当前浏览器不支持语音识别，请直接输入文字（Chrome/Edge 支持）","warn");input.focus()};
   }
   // 点击外部关闭
   document.addEventListener("click",function(e){
